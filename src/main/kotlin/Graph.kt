@@ -20,7 +20,7 @@ abstract class AbsGraph : Graph {
     abstract override fun hashCode(): Int
 }
 
-class BaseGraph(val vertexList: List<Vertex>, val edges: Set<Edge>) : AbsGraph() {
+class BaseGraph(val vertexList: Array<Vertex>, val edges: Set<Edge>) : AbsGraph() {
 
     init {
         //Ids should be sequential. Use GraphTranslator to be sure of that
@@ -29,7 +29,12 @@ class BaseGraph(val vertexList: List<Vertex>, val edges: Set<Edge>) : AbsGraph()
 
     override val size: Int get() = vertexList.size
     override val vertices = vertexList.asSequence()
-    val edgesMap = edges.groupBy { it.a.id } + edges.groupBy { it.b.id }
+    val edgesMap = Array(size) { mutableListOf<Edge>() }.also { arr ->
+        edges.forEach { e ->
+            arr[e.a.id].add(e)
+            arr[e.b.id].add(e)
+        }
+    }
     val degreeCalculator = DegreeCalculator(this)
     val allWedges: Sequence<Graph>
         get() = edges.asSequence().flatMap { e1 ->
@@ -61,6 +66,7 @@ class BaseGraph(val vertexList: List<Vertex>, val edges: Set<Edge>) : AbsGraph()
             return another.size
         } else throw UnsupportedOperationException("Complicated and not needed")
     }
+
 }
 
 open class SubGraph(
@@ -115,7 +121,7 @@ class MutableSubGraph(
 ) : SubGraph(size, verticesMask, parent) {
 
     override var edgesCount: Int = parent.edges.size
-    private val degreeCalculator = parent.degreeCalculator.toMutable()
+    private val degreeCalculator = parent.degreeCalculator.clone()
 
     fun degreeOf(vertex: Vertex) = degreeCalculator.degreeOf(vertex)
 

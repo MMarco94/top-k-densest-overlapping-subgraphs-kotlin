@@ -1,4 +1,6 @@
 import java.io.File
+import java.time.Duration
+import java.time.Instant
 
 data class City(val id: Long)
 
@@ -17,10 +19,13 @@ fun main() {
 
     println("Max vertex id = ${cities.map { it.id }.max()}. Vertices count=${cities.size}")
 
-    DOM(graph, 0.25).getDenseOverlappingSubGraphs()
-        .take(10)
-        .forEach { denseSubGraph ->
-            val cities = denseSubGraph.vertices.map { idReassigner.getInitialVertex(it) }
-            println(cities.sortedBy { it.id }.joinToString { it.id.toString() })
-        }
+    val start = Instant.now()
+    val subGraphs = DOM(graph, 0.25).getDenseOverlappingSubGraphs().take(10).toList()
+    val took = Duration.between(start, Instant.now())
+    println("Creating sub-graphs took $took")
+
+    subGraphs.forEach { denseSubGraph ->
+        val cities = denseSubGraph.vertices.map { idReassigner.getInitialVertex(it) }
+        println(cities.sortedBy { it.id }.joinToString { it.id.toString() })
+    }
 }

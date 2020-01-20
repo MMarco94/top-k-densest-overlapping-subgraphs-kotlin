@@ -1,32 +1,25 @@
-open class DegreeCalculator {
+class DegreeCalculator {
     val graph: BaseGraph
-    private val degrees: List<Int>
+    private val degrees: IntArray
 
     constructor(graph: BaseGraph) : this(
         graph,
-        List(graph.size) { graph.edgesMap[it]?.size ?: 0 }
+        IntArray(graph.size) { graph.edgesMap[it].size }
     )
 
-    protected constructor(graph: BaseGraph, degrees: List<Int>) {
+    private constructor(graph: BaseGraph, degrees: IntArray) {
         this.graph = graph
         this.degrees = degrees
     }
 
     fun degreeOf(vertex: Vertex): Int = degrees[vertex.id]
 
-    fun toMutable() = MutableDegreeCalculator(graph, degrees.toMutableList())
-
-}
-
-class MutableDegreeCalculator constructor(
-    graph: BaseGraph,
-    private val mutableDegrees: MutableList<Int>
-) : DegreeCalculator(graph, mutableDegrees) {
+    fun clone() = DegreeCalculator(graph, degrees.clone())
 
     fun remove(vertex: Vertex) {
-        graph.edgesMap[vertex.id]?.forEach { (a, b) ->
-            mutableDegrees[a.id]--
-            mutableDegrees[b.id]--
+        graph.edgesMap[vertex.id].forEach { (a, b) ->
+            degrees[a.id]--
+            degrees[b.id]--
         }
     }
 }

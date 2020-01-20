@@ -36,9 +36,9 @@ class DOM(
 
         val candidate = graph.toMutable()
         for (i in 1 until candidatesCount) {
-            val minVertex = candidate.vertices.minBy { v ->
+            val minVertex = candidate.minVertexBy { v ->
                 candidate.degreeOf(v) - 4 * lambda * penaltyCalculator.getPenalty(v)
-            }!!
+            }
             penaltyCalculator.remove(minVertex)
             candidate.remove(minVertex)
 
