@@ -34,7 +34,7 @@ class DOM(
         var bestCandidate: Graph? = null
         var bestCandidateScore = Double.MIN_VALUE
 
-        val candidate = MutableSubGraph(graph)
+        val candidate = graph.toMutable()
         for (i in 1 until candidatesCount) {
             val minVertex = candidate.vertices.minBy { v ->
                 candidate.degreeOf(v) - 4 * lambda * penaltyCalculator.getPenalty(v)
@@ -67,11 +67,13 @@ class DOM(
     private fun Graph.modify(subGraphs: Set<Graph>): Graph? {
         return null
         //TODO: fare meglio
-        val x = graph.vertices
+        /*val x = graph.vertices
             .filter { it !in this }
             .map { subGraph(vertices.toSet().plus(it)) }
             .filter { it !in subGraphs }
-        val y = vertices.map { without(it) }.filter { it !in subGraphs }
+        val y = vertices
+            .map { subGraph(vertices.toSet().minus(it)) }
+            .filter { it !in subGraphs }
         return if (x.isEmpty() && density <= 5.0 / 3.0) {//TODO: in their code is 7/6
             /**
              * Pag.13, differences between Peel and Charikar
@@ -81,6 +83,6 @@ class DOM(
             graph.allWedges.first { it !in subGraphs }
         } else {
             (x + y).maxBy { it.marginalGain(subGraphs) }!!
-        }
+        }*/
     }
 }

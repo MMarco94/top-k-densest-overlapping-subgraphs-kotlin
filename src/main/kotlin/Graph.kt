@@ -2,40 +2,22 @@ data class Vertex(val id: Int)
 data class Edge(val a: Vertex, val b: Vertex)
 
 interface Graph {
-    val vertices: Set<Vertex>
-    val size: Int get() = vertices.size
+    val vertices: Sequence<Vertex>
+    val size: Int
     /**
      * The density of a graph. See pag. 6, definition 1
      */
     val density: Double
 
     fun subGraph(vertices: Set<Vertex>): Graph
-    fun without(v: Vertex): Graph = subGraph(vertices.minus(v))
     fun toImmutable(): Graph
-
-    operator fun contains(vertex: Vertex) = vertex in vertices
-}
-
-fun intersectionCount(a: Graph, b: Graph): Double {
-    return if (a.size < b.size) {
-        a.vertices.count { it in b }
-    } else {
-        b.vertices.count { it in a }
-    }.toDouble()
+    fun intersectionCount(another: Graph): Int
+    operator fun contains(vertex: Vertex): Boolean
 }
 
 abstract class AbsGraph : Graph {
-    override fun equals(other: Any?): Boolean {
-        return other is Graph && other.vertices == vertices
-    }
-
-    protected var hashCache = -1
-    override fun hashCode(): Int {
-        if (hashCache == -1) {
-            hashCache = vertices.hashCode()
-        }
-        return hashCache
-    }
+    abstract override fun equals(other: Any?): Boolean
+    abstract override fun hashCode(): Int
 }
 
 class BaseGraph(val vertexList: List<Vertex>, val edges: Set<Edge>) : AbsGraph() {
@@ -45,32 +27,92 @@ class BaseGraph(val vertexList: List<Vertex>, val edges: Set<Edge>) : AbsGraph()
         require(vertexList.indices.toList() == vertexList.map { it.id })
     }
 
-    override val vertices = vertexList.toSet()
+    override val size: Int get() = vertexList.size
+    override val vertices = vertexList.asSequence()
     val edgesMap = edges.groupBy { it.a.id } + edges.groupBy { it.b.id }
     val degreeCalculator = DegreeCalculator(this)
     val allWedges: Sequence<Graph>
         get() = edges.asSequence().flatMap { e1 ->
-            edges.asSequence().map { e2 ->
-                subGraph(setOf(e1.a, e1.b, e2.a, e2.b))
+            edges.asSequence().mapNotNull { e2 ->
+                val vertices = setOf(e1.a, e1.b, e2.a, e2.b)
+                if (vertices.size == 3) {
+                    subGraph(vertices)
+                } else null
             }
-        }.filter { it.vertices.size == 3 }
+        }
 
-    override fun subGraph(vertices: Set<Vertex>): Graph = SubGraph(vertices, this)
-    override val density: Double get() = edges.size.toDouble() / vertices.size
+    override fun subGraph(vertices: Set<Vertex>): Graph {
+        val mask = BooleanArray(this.size) { vertices.contains(vertexList[it]) }
+        return SubGraph(vertices.size, mask, this)
+    }
+
+    override val density: Double get() = edges.size.toDouble() / size
     override fun toImmutable(): Graph = this
+    fun toMutable() = MutableSubGraph(size, BooleanArray(size) { true }, this)
+    override fun contains(vertex: Vertex) = vertex.id < size
+
+    override fun equals(other: Any?): Boolean {
+        return other === this
+    }
+
+    override fun hashCode(): Int = 0
+    override fun intersectionCount(another: Graph): Int {
+        if (another is SubGraph && another.parent == this) {
+            return another.size
+        } else throw UnsupportedOperationException("Complicated and not needed")
+    }
 }
 
-open class SubGraph(override val vertices: Set<Vertex>, val parent: BaseGraph) : AbsGraph() {
-    protected open val edgesCount get() = parent.edges.count { (a, b) -> a in vertices && b in vertices }
-    override val density: Double get() = edgesCount.toDouble() / vertices.size
+open class SubGraph(
+    size: Int,
+    val verticesMask: BooleanArray,
+    val parent: BaseGraph
+) : AbsGraph() {
+    override val vertices get() = parent.vertices.filter { verticesMask[it.id] }
+    override var size: Int = size
+        protected set
+    protected open val edgesCount get() = parent.edges.count { (a, b) -> a in this && b in this }
+    override val density: Double get() = edgesCount.toDouble() / size
     override fun subGraph(vertices: Set<Vertex>): Graph = parent.subGraph(vertices)
     override fun toImmutable(): Graph = this
+    override fun contains(vertex: Vertex): Boolean {
+        return verticesMask[vertex.id]
+    }
+
+    override fun equals(other: Any?): Boolean {
+        return other is SubGraph && other.verticesMask.contentEquals(verticesMask)
+    }
+
+    protected var hashCache = -1
+    override fun hashCode(): Int {
+        if (hashCache == -1) {
+            hashCache = verticesMask.hashCode()
+        }
+        return hashCache
+    }
+
+    override fun intersectionCount(another: Graph): Int {
+        return when {
+            another == parent -> size
+            another is SubGraph && another.parent == parent -> {
+                var sum = 0
+                verticesMask.forEachIndexed { index, b ->
+                    if (b && another.verticesMask[index]) {
+                        sum++
+                    }
+                }
+                sum
+            }
+            else -> throw UnsupportedOperationException("Complicated and not needed")
+        }
+    }
 }
 
 class MutableSubGraph(
-    parent: BaseGraph,
-    private val mutableVertices: MutableSet<Vertex> = parent.vertices.toMutableSet()
-) : SubGraph(mutableVertices, parent) {
+    size: Int,
+    verticesMask: BooleanArray,
+    parent: BaseGraph
+) : SubGraph(size, verticesMask, parent) {
 
     override var edgesCount: Int = parent.edges.size
     private val degreeCalculator = parent.degreeCalculator.toMutable()
@@ -78,11 +120,14 @@ class MutableSubGraph(
     fun degreeOf(vertex: Vertex) = degreeCalculator.degreeOf(vertex)
 
     fun remove(vertex: Vertex) {
-        mutableVertices.remove(vertex)
-        edgesCount -= degreeCalculator.degreeOf(vertex)
-        degreeCalculator.remove(vertex)
-        hashCache = -1
+        if (verticesMask[vertex.id]) {
+            verticesMask[vertex.id] = false
+            size--
+            edgesCount -= degreeCalculator.degreeOf(vertex)
+            degreeCalculator.remove(vertex)
+            hashCache = -1
+        }
     }
 
-    override fun toImmutable(): Graph = SubGraph(mutableVertices.toSet(), parent)
+    override fun toImmutable(): Graph = SubGraph(size, verticesMask.clone(), parent)
 }

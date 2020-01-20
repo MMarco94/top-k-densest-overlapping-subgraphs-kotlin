@@ -15,7 +15,7 @@ interface Distance {
 object MetricDistance : Distance {
     override operator fun invoke(g1: Graph, g2: Graph): Double {
         return if (g1 != g2) {
-            2 - intersectionCount(g1, g2).pow(2) / (g1.size * g2.size)
+            2 - g1.intersectionCount(g2).toDouble().pow(2) / (g1.size * g2.size)
         } else 0.0
     }
 }

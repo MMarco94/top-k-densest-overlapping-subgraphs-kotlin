@@ -3,7 +3,7 @@ class VertexPenaltyCalculator(
     val subGraphs: Set<Graph>
 ) {
     private val weights = graph.vertexList.mapTo(ArrayList(graph.size)) { vertex ->
-        subGraphs.count { vertex in it.vertices }.toDouble()
+        subGraphs.count { vertex in it }.toDouble()
     }
 
     fun getPenalty(vertex: Vertex): Double {
@@ -11,7 +11,7 @@ class VertexPenaltyCalculator(
     }
 
     fun remove(vertex: Vertex) {
-        subGraphs.forIf({ vertex in it.vertices }) { g ->
+        subGraphs.forIf({ vertex in it }) { g ->
             g.vertices.forEach { v ->
                 weights[v.id] -= 1.0 / g.size
             }
