@@ -1,25 +1,39 @@
 class DegreeCalculator {
     val graph: BaseGraph
     private val degrees: IntArray
+    private val edgesMap: Array<MutableList<Edge>>
 
-    constructor(graph: BaseGraph) : this(
-        graph,
-        IntArray(graph.size) { graph.edgesMap[it].size }
-    )
-
-    private constructor(graph: BaseGraph, degrees: IntArray) {
+    constructor(graph: BaseGraph) {
         this.graph = graph
-        this.degrees = degrees
+        this.edgesMap = Array(graph.size) { mutableListOf<Edge>() }.also { arr ->
+            graph.edges.forEach { e ->
+                arr[e.a].add(e)
+                arr[e.b].add(e)
+            }
+        }
+        this.degrees = IntArray(graph.size) { edgesMap[it].size }
     }
 
-    fun degreeOf(vertex: Vertex): Int = degrees[vertex.id]
+    private constructor(graph: BaseGraph, degrees: IntArray, edgesMap: Array<MutableList<Edge>>) {
+        this.graph = graph
+        this.degrees = degrees
+        this.edgesMap = edgesMap
+    }
 
-    fun clone() = DegreeCalculator(graph, degrees.clone())
+    fun degreeOf(vertex: Vertex): Int = degrees[vertex]
+
+    fun clone() = DegreeCalculator(graph, degrees.clone(), edgesMap)
 
     fun remove(vertex: Vertex) {
-        graph.edgesMap[vertex.id].forEach { (a, b) ->
-            degrees[a.id]--
-            degrees[b.id]--
+        edgesMap[vertex].forEach { (a, b) ->
+            degrees[a]--
+            degrees[b]--
+        }
+    }
+    fun add(vertex: Vertex) {
+        edgesMap[vertex].forEach { (a, b) ->
+            degrees[a]++
+            degrees[b]++
         }
     }
 }

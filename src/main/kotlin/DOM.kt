@@ -28,61 +28,86 @@ class DOM(
     private fun peel(subGraphs: Set<Graph>): Graph {
         val penaltyCalculator = VertexPenaltyCalculator(graph, subGraphs)
 
-        val candidatesCount = graph.size - 1 //n to 2 inclusive
+        val candidate = graph.toSubGraph()
+        return findBestSubGraph(subGraphs) { consumer ->
+            while (candidate.size > 2) {
+                val minVertex = candidate.minVertexBy { v ->
+                    candidate.degreeOf(v) - 4 * lambda * penaltyCalculator.getPenalty(v)
+                }
+                penaltyCalculator.remove(minVertex)
+                candidate.remove(minVertex)
 
-
-        var bestCandidate: Graph? = null
-        var bestCandidateScore = Double.MIN_VALUE
-
-        val candidate = graph.toMutable()
-        for (i in 1 until candidatesCount) {
-            val minVertex = candidate.minVertexBy { v ->
-                candidate.degreeOf(v) - 4 * lambda * penaltyCalculator.getPenalty(v)
-            }
-            penaltyCalculator.remove(minVertex)
-            candidate.remove(minVertex)
-
-            val modified = candidate.modifyIfNeeded(subGraphs)
-            if (modified != null) {
-                val score = modified.marginalGain(subGraphs)
-                if (score > bestCandidateScore) {
-                    bestCandidate = modified.toImmutable()
-                    bestCandidateScore = score
+                val modified = candidate.modifyIfNeeded(subGraphs)
+                if (modified != null) {
+                    consumer(modified)
                 }
             }
-        }
-
-        return bestCandidate!!
+        }!!
     }
 
     /**
      * Pag. 14, algorithm 3
      */
-    private fun Graph.modifyIfNeeded(subGraphs: Set<Graph>): Graph? {
+    private fun SubGraph.modifyIfNeeded(subGraphs: Set<Graph>): SubGraph? {
         return if (this in subGraphs) {
             modify(subGraphs)
         } else this
     }
 
-    private fun Graph.modify(subGraphs: Set<Graph>): Graph? {
-        return null
-        //TODO: fare meglio
-        /*val x = graph.vertices
-            .filter { it !in this }
-            .map { subGraph(vertices.toSet().plus(it)) }
-            .filter { it !in subGraphs }
-        val y = vertices
-            .map { subGraph(vertices.toSet().minus(it)) }
-            .filter { it !in subGraphs }
-        return if (x.isEmpty() && density <= 5.0 / 3.0) {//TODO: in their code is 7/6
+    private fun SubGraph.modify(subGraphs: Set<Graph>): SubGraph? {
+        val candidate = findBestSubGraph(subGraphs) { consumer ->
+            val nodesToAdd = graph.vertices.filter { it !in this }
+            nodesToAdd.forEach {
+                add(it)
+                consumer(this)
+                remove(it)
+            }
+
+            val nodesToRemove = vertices
+            nodesToRemove.forEach {
+                add(it)
+                consumer(this)
+                remove(it)
+            }
+
+        }
+        /**
+         * TODO:
+         * in their paper they also add the condition density <= 5/3 (that in their code is <= 7/6)
+         */
+        if (candidate == null) {
             /**
              * Pag.13, differences between Peel and Charikar
              * Replace U with a trivial subgraph of size 3.
              * Note: The wedge has nothing to do with candidate
              */
-            graph.allWedges.first { it !in subGraphs }
-        } else {
-            (x + y).maxBy { it.marginalGain(subGraphs) }!!
-        }*/
+            return null
+            /*val allWedges = graph.edges.asSequence().flatMap { e1 ->
+                graph.edges.asSequence().mapNotNull { e2 ->
+                    val vertices = setOf(e1.a, e1.b, e2.a, e2.b)
+                    if (vertices.size == 3) {
+                        subGraph(vertices)
+                    } else null
+                }
+            }
+            allWedges.first { it !in subGraphs }*/
+        } else return candidate
+    }
+
+    private inline fun findBestSubGraph(subGraphs: Set<Graph>, f: (consumer: (SubGraph) -> Unit) -> Unit): SubGraph? {
+        var bestCandidate: SubGraph? = null
+        var bestCandidateScore = Double.MIN_VALUE
+
+        f { sg ->
+            if (sg !in subGraphs) {
+                val score = sg.marginalGain(subGraphs)
+                if (score > bestCandidateScore) {
+                    bestCandidate = sg.clone()
+                    bestCandidateScore = score
+                }
+            }
+        }
+
+        return bestCandidate
     }
 }

@@ -16,12 +16,18 @@ operator fun <K, V> Map<K, List<V>>.plus(another: Map<K, List<V>>): Map<K, List<
     return ret
 }
 
-inline fun Graph.forEachVertex(f: (Vertex) -> Unit) {
+inline fun BaseGraph.forEachVertex(f: (vertexId: Int) -> Unit) {
+    for (i in 0 until size) {
+        f(i)
+    }
+}
+
+inline fun Graph.forEachVertex(f: (vertexId: Int) -> Unit) {
     when (this) {
-        is BaseGraph -> vertexList.forEach(f)
+        is BaseGraph -> forEachVertex(f)
         is SubGraph -> {
-            parent.vertexList.forEachIndexed { index, vertex ->
-                if (verticesMask[index]) {
+            parent.forEachVertex { vertex ->
+                if (verticesMask[vertex]) {
                     f(vertex)
                 }
             }
