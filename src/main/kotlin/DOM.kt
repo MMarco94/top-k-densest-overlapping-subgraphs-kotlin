@@ -18,80 +18,73 @@ class DOM(
     /**
      * Pag. 12, problem 4
      */
-    private fun Graph.marginalGain(subGraphs: Set<Graph>): Double {
-        return density / 2 + lambda * subGraphs.sumByDouble { distance(this, it) }
+    private fun Peeler.marginalGain(subGraphs: Set<Graph>): Double {
+        return candidateDensity / 2 + lambda * subGraphs.sumByDouble { distance(candidate, it) }
     }
 
     /**
      * Pag. 14, algorithm 2
      */
     private fun peel(subGraphs: Set<SubGraph>): SubGraph {
-        val penaltyCalculator = VertexPenaltyCalculator(graph, subGraphs)
+        val peeler = Peeler(graph, subGraphs, lambda)
 
-        var candidate = graph.toSubGraph()
         return findBestSubGraph(subGraphs) { consumer ->
-            while (candidate.size > 2) {
-                val minVertex = candidate.minVertexBy { v ->
-                    candidate.degreeOf(v) - 4 * lambda * penaltyCalculator.getPenalty(v)
-                }
-                penaltyCalculator.remove(minVertex)
-                candidate.remove(minVertex)
+            while (peeler.candidate.size > 3) {
+                val minVertex = peeler.getWorstVertex()
+                peeler.remove(minVertex)
+                val pair = peeler.marginalGainModified(subGraphs)
+                consumer(pair)
 
-                candidate = candidate.modifyIfNeeded(subGraphs)
-                consumer(candidate)
+                //I already encountered this subgraph, and all its trivial modifications. I can break
+                if (pair == null) break
             }
-        }!!
+        }?.first ?: findWedge(subGraphs)
     }
 
     /**
      * Pag. 14, algorithm 3
      */
-    private fun SubGraph.modifyIfNeeded(subGraphs: Set<Graph>): SubGraph {
-        return if (this in subGraphs) {
-            modify(subGraphs)
-        } else this
+    private fun Peeler.marginalGainModified(subGraphs: Set<Graph>): Pair<SubGraph, Double>? {
+        return if (candidate in subGraphs) {
+            findBestSubGraph(subGraphs) { consumer ->
+                graph.vertices.filter { it !in this.candidate }.forEach {
+                    add(it)
+                    consumer(candidate to marginalGain(subGraphs))
+                    remove(it)
+                }
+
+                this.candidate.vertices.forEach {
+                    remove(it)
+                    consumer(candidate to marginalGain(subGraphs))
+                    add(it)
+                }
+            }
+        } else candidate to marginalGain(subGraphs)
     }
 
-    private fun SubGraph.modify(subGraphs: Set<Graph>): SubGraph {
-        val candidate = findBestSubGraph(subGraphs) { consumer ->
-            graph.vertices.filter { it !in this }.forEach {
-                add(it)
-                consumer(this)
-                remove(it)
-            }
-
-            vertices.forEach {
-                add(it)
-                consumer(this)
-                remove(it)
-            }
-        }
-        /**
-         * TODO:
-         * in their paper they also add the condition density <= 5/3 (that in their code is <= 7/6)
-         */
-        /**
-         * Pag.13, differences between Peel and Charikar
-         * Replace U with a trivial subgraph of size 3.
-         * Note: The wedge has nothing to do with candidate
-         */
-        return candidate ?: graph.allWedges.first { it !in subGraphs }
+    /**
+     * Pag.13, differences between Peel and Charikar
+     * Replace U with a trivial subgraph of size 3.
+     * Note: The wedge has nothing to do with candidate
+     */
+    private fun findWedge(subGraphs: Set<Graph>): SubGraph {
+        return graph.allWedges.first { it !in subGraphs }
     }
 
-    private inline fun findBestSubGraph(subGraphs: Set<Graph>, producer: (consumer: (SubGraph) -> Unit) -> Unit): SubGraph? {
+    private inline fun findBestSubGraph(subGraphs: Set<Graph>, producer: (consumer: (Pair<SubGraph, Double>?) -> Unit) -> Unit): Pair<SubGraph, Double>? {
         var bestCandidate: SubGraph? = null
         var bestCandidateScore = Double.MIN_VALUE
 
-        producer { sg ->
-            if (sg !in subGraphs) {
-                val score = sg.marginalGain(subGraphs)
+        producer { pair ->
+            if (pair != null && pair.first !in subGraphs) {
+                val score = pair.second
                 if (score > bestCandidateScore) {
-                    bestCandidate = sg.clone()
+                    bestCandidate = pair.first.clone()
                     bestCandidateScore = score
                 }
             }
         }
 
-        return bestCandidate
+        return bestCandidate?.let { it to bestCandidateScore }
     }
 }
