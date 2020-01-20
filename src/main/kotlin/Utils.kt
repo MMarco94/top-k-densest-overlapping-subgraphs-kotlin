@@ -22,21 +22,15 @@ inline fun BaseGraph.forEachVertex(f: (vertexId: Int) -> Unit) {
     }
 }
 
-inline fun Graph.forEachVertex(f: (vertexId: Int) -> Unit) {
-    when (this) {
-        is BaseGraph -> forEachVertex(f)
-        is SubGraph -> {
-            parent.forEachVertex { vertex ->
-                if (verticesMask[vertex]) {
-                    f(vertex)
-                }
-            }
+inline fun SubGraph.forEachVertex(f: (vertexId: Int) -> Unit) {
+    parent.forEachVertex { vertex ->
+        if (verticesMask[vertex]) {
+            f(vertex)
         }
-        else -> throw IllegalStateException()
     }
 }
 
-inline fun Graph.minVertexBy(f: (Vertex) -> Double): Vertex {
+inline fun SubGraph.minVertexBy(f: (Vertex) -> Double): Vertex {
     var min: Vertex? = null
     var minVal = 0.0
     forEachVertex { v ->

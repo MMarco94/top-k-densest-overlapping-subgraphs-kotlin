@@ -8,7 +8,7 @@ class DOM(
      * Pag. 31, Algorithm 1
      */
     fun getDenseOverlappingSubGraphs(): Sequence<Graph> {
-        return generateSequence(setOf<Graph>()) {
+        return generateSequence(setOf<SubGraph>()) {
             it.plus(peel(it))
         }
             .drop(1)
@@ -25,7 +25,7 @@ class DOM(
     /**
      * Pag. 14, algorithm 2
      */
-    private fun peel(subGraphs: Set<Graph>): Graph {
+    private fun peel(subGraphs: Set<SubGraph>): SubGraph {
         val penaltyCalculator = VertexPenaltyCalculator(graph, subGraphs)
 
         var candidate = graph.toSubGraph()
@@ -54,40 +54,35 @@ class DOM(
 
     private fun SubGraph.modify(subGraphs: Set<Graph>): SubGraph {
         val candidate = findBestSubGraph(subGraphs) { consumer ->
-            val nodesToAdd = graph.vertices.filter { it !in this }
-            nodesToAdd.forEach {
+            graph.vertices.filter { it !in this }.forEach {
                 add(it)
                 consumer(this)
                 remove(it)
             }
 
-            val nodesToRemove = vertices
-            nodesToRemove.forEach {
+            vertices.forEach {
                 add(it)
                 consumer(this)
                 remove(it)
             }
-
         }
         /**
          * TODO:
          * in their paper they also add the condition density <= 5/3 (that in their code is <= 7/6)
          */
-        if (candidate == null) {
-            /**
-             * Pag.13, differences between Peel and Charikar
-             * Replace U with a trivial subgraph of size 3.
-             * Note: The wedge has nothing to do with candidate
-             */
-            return graph.allWedges.first { it !in subGraphs }
-        } else return candidate
+        /**
+         * Pag.13, differences between Peel and Charikar
+         * Replace U with a trivial subgraph of size 3.
+         * Note: The wedge has nothing to do with candidate
+         */
+        return candidate ?: graph.allWedges.first { it !in subGraphs }
     }
 
-    private inline fun findBestSubGraph(subGraphs: Set<Graph>, f: (consumer: (SubGraph) -> Unit) -> Unit): SubGraph? {
+    private inline fun findBestSubGraph(subGraphs: Set<Graph>, producer: (consumer: (SubGraph) -> Unit) -> Unit): SubGraph? {
         var bestCandidate: SubGraph? = null
         var bestCandidateScore = Double.MIN_VALUE
 
-        f { sg ->
+        producer { sg ->
             if (sg !in subGraphs) {
                 val score = sg.marginalGain(subGraphs)
                 if (score > bestCandidateScore) {

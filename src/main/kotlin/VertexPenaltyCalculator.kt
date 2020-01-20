@@ -1,6 +1,6 @@
 class VertexPenaltyCalculator(
     val graph: BaseGraph,
-    val subGraphs: Set<Graph>
+    val subGraphs: Set<SubGraph>
 ) {
     private val weights = DoubleArray(graph.size) { vertex ->
         subGraphs.count { vertex in it }.toDouble()
