@@ -1,33 +1,32 @@
 open class DegreeCalculator {
     val graph: BaseGraph
-    val degrees: Map<Vertex, Int>
+    private val degrees: List<Int>
 
     constructor(graph: BaseGraph) : this(
         graph,
-        graph.edgesMap.mapValues { it.value.size }
+        List(graph.size) { graph.edgesMap[it]?.size ?: 0 }
     )
 
-    protected constructor(graph: BaseGraph, degrees: Map<Vertex, Int>) {
+    protected constructor(graph: BaseGraph, degrees: List<Int>) {
         this.graph = graph
         this.degrees = degrees
     }
 
-    fun degreeOf(vertex: Vertex): Int = degrees[vertex] ?: 0
+    fun degreeOf(vertex: Vertex): Int = degrees[vertex.id]
 
-    fun toMutable() = MutableDegreeCalculator(graph, degrees.toMutableMap())
+    fun toMutable() = MutableDegreeCalculator(graph, degrees.toMutableList())
 
 }
 
-class MutableDegreeCalculator(
+class MutableDegreeCalculator constructor(
     graph: BaseGraph,
-    private val mutableDegrees: MutableMap<Vertex, Int>
+    private val mutableDegrees: MutableList<Int>
 ) : DegreeCalculator(graph, mutableDegrees) {
 
     fun remove(vertex: Vertex) {
-        mutableDegrees.remove(vertex)
-        graph.edgesMap[vertex]?.forEach { (a, b) ->
-            mutableDegrees.computeIfPresent(a) { _, v -> v - 1 }
-            mutableDegrees.computeIfPresent(b) { _, v -> v - 1 }
+        graph.edgesMap[vertex.id]?.forEach { (a, b) ->
+            mutableDegrees[a.id]--
+            mutableDegrees[b.id]--
         }
     }
 }

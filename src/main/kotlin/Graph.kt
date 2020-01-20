@@ -1,4 +1,4 @@
-data class Vertex(val id: Long)
+data class Vertex(val id: Int)
 data class Edge(val a: Vertex, val b: Vertex)
 
 interface Graph {
@@ -11,13 +11,16 @@ interface Graph {
 
     fun subGraph(vertices: Set<Vertex>): Graph
     fun without(v: Vertex): Graph = subGraph(vertices.minus(v))
+    fun toImmutable(): Graph
+
+    operator fun contains(vertex: Vertex) = vertex in vertices
 }
 
 fun intersectionCount(a: Graph, b: Graph): Double {
     return if (a.size < b.size) {
-        a.vertices.count { it in b.vertices }
+        a.vertices.count { it in b }
     } else {
-        b.vertices.count { it in a.vertices }
+        b.vertices.count { it in a }
     }.toDouble()
 }
 
@@ -35,8 +38,15 @@ abstract class AbsGraph : Graph {
     }
 }
 
-class BaseGraph(override val vertices: Set<Vertex>, val edges: Set<Edge>) : AbsGraph() {
-    val edgesMap = edges.groupBy { it.a } + edges.groupBy { it.b }
+class BaseGraph(val vertexList: List<Vertex>, val edges: Set<Edge>) : AbsGraph() {
+
+    init {
+        //Ids should be sequential. Use GraphTranslator to be sure of that
+        require(vertexList.indices.toList() == vertexList.map { it.id })
+    }
+
+    override val vertices = vertexList.toSet()
+    val edgesMap = edges.groupBy { it.a.id } + edges.groupBy { it.b.id }
     val degreeCalculator = DegreeCalculator(this)
     val allWedges: Sequence<Graph>
         get() = edges.asSequence().flatMap { e1 ->
@@ -47,12 +57,14 @@ class BaseGraph(override val vertices: Set<Vertex>, val edges: Set<Edge>) : AbsG
 
     override fun subGraph(vertices: Set<Vertex>): Graph = SubGraph(vertices, this)
     override val density: Double get() = edges.size.toDouble() / vertices.size
+    override fun toImmutable(): Graph = this
 }
 
 open class SubGraph(override val vertices: Set<Vertex>, val parent: BaseGraph) : AbsGraph() {
     protected open val edgesCount get() = parent.edges.count { (a, b) -> a in vertices && b in vertices }
     override val density: Double get() = edgesCount.toDouble() / vertices.size
     override fun subGraph(vertices: Set<Vertex>): Graph = parent.subGraph(vertices)
+    override fun toImmutable(): Graph = this
 }
 
 class MutableSubGraph(
@@ -72,5 +84,5 @@ class MutableSubGraph(
         hashCache = -1
     }
 
-    fun toImmutable() = SubGraph(mutableVertices.toSet(), parent)
+    override fun toImmutable(): Graph = SubGraph(mutableVertices.toSet(), parent)
 }

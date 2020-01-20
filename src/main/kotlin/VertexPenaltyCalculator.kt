@@ -2,22 +2,18 @@ class VertexPenaltyCalculator(
     val graph: BaseGraph,
     val subGraphs: Set<Graph>
 ) {
-    private val weights = graph.vertices.associateWithTo(HashMap(graph.vertices.size)) { v ->
-        subGraphs.sumIf({ v in it.vertices }) {
-            intersectionCount(graph, it) / it.size
-        }
+    private val weights = graph.vertexList.mapTo(ArrayList(graph.size)) { vertex ->
+        subGraphs.count { vertex in it.vertices }.toDouble()
     }
 
     fun getPenalty(vertex: Vertex): Double {
-        return weights.getValue(vertex)
+        return weights[vertex.id]
     }
 
     fun remove(vertex: Vertex) {
         subGraphs.forIf({ vertex in it.vertices }) { g ->
             g.vertices.forEach { v ->
-                weights.computeIfPresent(v) { _, w ->
-                    w - 1.0 / g.size
-                }
+                weights[v.id] -= 1.0 / g.size
             }
         }
     }

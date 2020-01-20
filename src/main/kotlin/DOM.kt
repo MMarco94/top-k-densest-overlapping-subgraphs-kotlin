@@ -14,6 +14,7 @@ class DOM(
             .drop(1)
             .map { it.last() }
     }
+
     /**
      * Pag. 12, problem 4
      */
@@ -41,12 +42,13 @@ class DOM(
             penaltyCalculator.remove(minVertex)
             candidate.remove(minVertex)
 
-            val score = candidate
-                .modifyIfNeeded(subGraphs)
-                .marginalGain(subGraphs)
-            if (score > bestCandidateScore) {
-                bestCandidate = candidate.toImmutable()
-                bestCandidateScore = score
+            val modified = candidate.modifyIfNeeded(subGraphs)
+            if (modified != null) {
+                val score = modified.marginalGain(subGraphs)
+                if (score > bestCandidateScore) {
+                    bestCandidate = modified.toImmutable()
+                    bestCandidateScore = score
+                }
             }
         }
 
@@ -56,14 +58,19 @@ class DOM(
     /**
      * Pag. 14, algorithm 3
      */
-    private fun Graph.modifyIfNeeded(subGraphs: Set<Graph>): Graph {
+    private fun Graph.modifyIfNeeded(subGraphs: Set<Graph>): Graph? {
         return if (this in subGraphs) {
             modify(subGraphs)
         } else this
     }
 
-    private fun Graph.modify(subGraphs: Set<Graph>): Graph {
-        val x = graph.vertices.filter { it !in vertices }.map { subGraph(vertices.plus(it)) }.filter { it !in subGraphs }
+    private fun Graph.modify(subGraphs: Set<Graph>): Graph? {
+        return null
+        //TODO: fare meglio
+        val x = graph.vertices
+            .filter { it !in this }
+            .map { subGraph(vertices.toSet().plus(it)) }
+            .filter { it !in subGraphs }
         val y = vertices.map { without(it) }.filter { it !in subGraphs }
         return if (x.isEmpty() && density <= 5.0 / 3.0) {//TODO: in their code is 7/6
             /**
