@@ -1,5 +1,5 @@
 class DOM(
-    val graph: Graph,
+    val graph: BaseGraph,
     val lambda: Double,
     val distance: Distance = MetricDistance
 ) {
@@ -14,7 +14,6 @@ class DOM(
             .drop(1)
             .map { it.last() }
     }
-
     /**
      * Pag. 12, problem 4
      */
@@ -26,19 +25,32 @@ class DOM(
      * Pag. 14, algorithm 2
      */
     private fun peel(subGraphs: Set<Graph>): Graph {
-        val candidates = generateSequence(graph) { prev ->
-            if (prev.size > 2) {
-                val minVertex = prev.vertices.minBy { v ->
-                    prev.degreeOf(v) - 4 * lambda * subGraphs.sumIf({ v in it.vertices }) { intersectionCount(prev, it) / it.size }
-                }!!
-                prev.minus(minVertex)
-            } else null
-        }
-        return candidates.maxBy {
-            it
+        val penaltyCalculator = VertexPenaltyCalculator(graph, subGraphs)
+
+        val candidatesCount = graph.size - 1 //n to 2 inclusive
+
+
+        var bestCandidate: Graph? = null
+        var bestCandidateScore = Double.MIN_VALUE
+
+        val candidate = MutableSubGraph(graph)
+        for (i in 1 until candidatesCount) {
+            val minVertex = candidate.vertices.minBy { v ->
+                candidate.degreeOf(v) - 4 * lambda * penaltyCalculator.getPenalty(v)
+            }!!
+            penaltyCalculator.remove(minVertex)
+            candidate.remove(minVertex)
+
+            val score = candidate
                 .modifyIfNeeded(subGraphs)
                 .marginalGain(subGraphs)
-        }!!
+            if (score > bestCandidateScore) {
+                bestCandidate = candidate.toImmutable()
+                bestCandidateScore = score
+            }
+        }
+
+        return bestCandidate!!
     }
 
     /**
@@ -51,8 +63,8 @@ class DOM(
     }
 
     private fun Graph.modify(subGraphs: Set<Graph>): Graph {
-        val x = graph.vertices.filter { it !in vertices }.map { plus(it) }.filter { it !in subGraphs }
-        val y = vertices.map { minus(it) }.filter { it !in subGraphs }
+        val x = graph.vertices.filter { it !in vertices }.map { subGraph(vertices.plus(it)) }.filter { it !in subGraphs }
+        val y = vertices.map { without(it) }.filter { it !in subGraphs }
         return if (x.isEmpty() && density <= 5.0 / 3.0) {//TODO: in their code is 7/6
             /**
              * Pag.13, differences between Peel and Charikar

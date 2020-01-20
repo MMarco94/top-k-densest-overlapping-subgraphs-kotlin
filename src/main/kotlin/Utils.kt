@@ -4,6 +4,12 @@ fun <T> Collection<T>.sumIf(condition: (T) -> Boolean, value: (T) -> Double): Do
     }
 }
 
+fun <T> Collection<T>.forIf(condition: (T) -> Boolean, f: (T) -> Unit) {
+    forEach {
+        if (condition(it)) f(it)
+    }
+}
+
 operator fun <K, V> Map<K, List<V>>.plus(another: Map<K, List<V>>): Map<K, List<V>> {
     val ret = this.toMutableMap()
     another.forEach { (k, list) ->
