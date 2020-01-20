@@ -28,7 +28,7 @@ class DOM(
     private fun peel(subGraphs: Set<Graph>): Graph {
         val penaltyCalculator = VertexPenaltyCalculator(graph, subGraphs)
 
-        val candidate = graph.toSubGraph()
+        var candidate = graph.toSubGraph()
         return findBestSubGraph(subGraphs) { consumer ->
             while (candidate.size > 2) {
                 val minVertex = candidate.minVertexBy { v ->
@@ -37,10 +37,8 @@ class DOM(
                 penaltyCalculator.remove(minVertex)
                 candidate.remove(minVertex)
 
-                val modified = candidate.modifyIfNeeded(subGraphs)
-                if (modified != null) {
-                    consumer(modified)
-                }
+                candidate = candidate.modifyIfNeeded(subGraphs)
+                consumer(candidate)
             }
         }!!
     }
@@ -48,13 +46,13 @@ class DOM(
     /**
      * Pag. 14, algorithm 3
      */
-    private fun SubGraph.modifyIfNeeded(subGraphs: Set<Graph>): SubGraph? {
+    private fun SubGraph.modifyIfNeeded(subGraphs: Set<Graph>): SubGraph {
         return if (this in subGraphs) {
             modify(subGraphs)
         } else this
     }
 
-    private fun SubGraph.modify(subGraphs: Set<Graph>): SubGraph? {
+    private fun SubGraph.modify(subGraphs: Set<Graph>): SubGraph {
         val candidate = findBestSubGraph(subGraphs) { consumer ->
             val nodesToAdd = graph.vertices.filter { it !in this }
             nodesToAdd.forEach {
@@ -81,16 +79,7 @@ class DOM(
              * Replace U with a trivial subgraph of size 3.
              * Note: The wedge has nothing to do with candidate
              */
-            return null
-            /*val allWedges = graph.edges.asSequence().flatMap { e1 ->
-                graph.edges.asSequence().mapNotNull { e2 ->
-                    val vertices = setOf(e1.a, e1.b, e2.a, e2.b)
-                    if (vertices.size == 3) {
-                        subGraph(vertices)
-                    } else null
-                }
-            }
-            allWedges.first { it !in subGraphs }*/
+            return graph.allWedges.first { it !in subGraphs }
         } else return candidate
     }
 

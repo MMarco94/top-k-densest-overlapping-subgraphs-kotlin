@@ -1,6 +1,14 @@
 typealias Vertex = Int
 
-data class Edge(val a: Vertex, val b: Vertex)
+data class Edge(val a: Vertex, val b: Vertex) {
+    fun otherVertex(v: Vertex): Vertex {
+        return when (v) {
+            a -> b
+            b -> a
+            else -> throw IllegalArgumentException()
+        }
+    }
+}
 
 interface Graph {
     val vertices: Sequence<Vertex>
@@ -20,12 +28,44 @@ abstract class AbsGraph : Graph {
 }
 
 class BaseGraph(override val size: Int, val edges: Set<Edge>) : AbsGraph() {
-
     override val vertices = (0 until size).asSequence()
+    override val density: Double get() = edges.size.toDouble() / size
+    val edgesMap: Array<MutableList<Edge>> = Array(size) { mutableListOf<Edge>() }.also { arr ->
+        edges.forEach { e ->
+            arr[e.a].add(e)
+            arr[e.b].add(e)
+        }
+    }
+    val allWedges = sequence {
+        edgesMap.forEachIndexed { v1, edges ->
+            edges.forEach { e1 ->
+                val v2 = e1.otherVertex(v1)
+                edgesMap[v2].forEach { e2 ->
+                    val v3 = e2.otherVertex(v2)
+                    if (v3 != v1) {
+                        yield(setOf(v1, v2, v3))
+                    }
+                }
+            }
+        }
+    }.map { subGraph(it) }
     val degreeCalculator = DegreeCalculator(this)
 
-    override val density: Double get() = edges.size.toDouble() / size
     fun toSubGraph() = SubGraph(this)
+    private fun subGraph(vertices: Set<Vertex>) = SubGraph(
+        vertices.size,
+        edges.count { (a, b) -> a in vertices && b in vertices },
+        BooleanArray(vertices.size) { it in vertices },
+        this,
+        lazy {
+            DegreeCalculator(this, IntArray(vertices.size) { v ->
+                if (v in vertices) {
+                    edgesMap[v].count { e -> e.otherVertex(v) in vertices }
+                } else 0
+            })
+        }
+    )
+
     override fun contains(vertex: Vertex) = vertex < size
 
     override fun equals(other: Any?): Boolean {
@@ -58,7 +98,7 @@ class SubGraph : AbsGraph {
         this.degreeCalculator = lazy(LazyThreadSafetyMode.NONE) { parent.degreeCalculator.clone() }
     }
 
-    private constructor(size: Int, edgesCount: Int, verticesMask: BooleanArray, parent: BaseGraph, degreeCalculator: Lazy<DegreeCalculator>) {
+    constructor(size: Int, edgesCount: Int, verticesMask: BooleanArray, parent: BaseGraph, degreeCalculator: Lazy<DegreeCalculator>) {
         this.verticesMask = verticesMask
         this.edgesCount = edgesCount
         this.parent = parent
