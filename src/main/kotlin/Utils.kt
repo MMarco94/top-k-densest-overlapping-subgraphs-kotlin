@@ -16,17 +16,6 @@ operator fun <K, V> Map<K, List<V>>.plus(another: Map<K, List<V>>): Map<K, List<
     return ret
 }
 
-infix fun BooleanArray.dot(b: BooleanArray): Int {
-    var sum = 0
-    forEachIndexed { index, ok ->
-        if (ok && b[index]) {
-            sum++
-        }
-    }
-    return sum
-}
-
-
 inline fun BaseGraph.forEachVertex(f: (vertexId: Int) -> Unit) {
     for (i in 0 until size) {
         f(i)

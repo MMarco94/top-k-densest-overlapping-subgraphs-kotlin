@@ -10,12 +10,17 @@ class Peeler(
     private val weights = DoubleArray(graph.size) { vertex ->
         degrees[vertex] - 4 * lambda * subGraphs.count { vertex in it }
     }
+    private val intersectionCount = subGraphs.associateWithTo(HashMap()) { it.size }
     val candidateDensity get() = candidateEdges.toDouble() / candidate.size
 
     fun getWorstVertex(): Vertex {
         return candidate.minVertexBy { vertex ->
             weights[vertex]
         }
+    }
+
+    fun getIntersectionSize(another: SubGraph): Int {
+        return intersectionCount.getValue(another)
     }
 
     fun remove(vertex: Vertex) {
@@ -30,6 +35,7 @@ class Peeler(
             }
         }
         subGraphs.forIf({ vertex in it }) { g ->
+            intersectionCount.computeIfPresent(g) { _, v -> v - 1 }
             g.forEachVertex { v ->
                 weights[v] += 4 * lambda / g.size
             }
@@ -48,6 +54,7 @@ class Peeler(
         }
         candidateEdges += degrees[vertex]
         subGraphs.forIf({ vertex in it }) { g ->
+            intersectionCount.computeIfPresent(g) { _, v -> v + 1 }
             g.forEachVertex { v ->
                 weights[v] -= 4 * lambda / g.size
             }

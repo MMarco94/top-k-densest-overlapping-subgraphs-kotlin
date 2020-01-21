@@ -18,8 +18,10 @@ class DOM(
     /**
      * Pag. 12, problem 4
      */
-    private fun Peeler.marginalGain(subGraphs: Set<Graph>): Double {
-        return candidateDensity / 2 + lambda * subGraphs.sumByDouble { distance(candidate, it) }
+    private fun Peeler.marginalGain(subGraphs: Set<SubGraph>): Double {
+        return candidateDensity / 2 + lambda * subGraphs.sumByDouble {
+            distance(candidate, it) { getIntersectionSize(it) }
+        }
     }
 
     /**
@@ -44,7 +46,7 @@ class DOM(
     /**
      * Pag. 14, algorithm 3
      */
-    private fun Peeler.marginalGainModified(subGraphs: Set<Graph>): Pair<SubGraph, Double>? {
+    private fun Peeler.marginalGainModified(subGraphs: Set<SubGraph>): Pair<SubGraph, Double>? {
         return if (candidate in subGraphs) {
             findBestSubGraph(subGraphs) { consumer ->
                 graph.vertices.filter { it !in this.candidate }.forEach {

@@ -13,8 +13,6 @@ data class Edge(val a: Vertex, val b: Vertex) {
 interface Graph {
     val vertices: Sequence<Vertex>
     val size: Int
-
-    fun intersectionCount(another: Graph): Int
     operator fun contains(vertex: Vertex): Boolean
 }
 
@@ -57,12 +55,6 @@ class BaseGraph(override val size: Int, val edges: Set<Edge>) : AbsGraph() {
     override fun equals(other: Any?): Boolean {
         return other === this
     }
-
-    override fun intersectionCount(another: Graph): Int {
-        if (another is SubGraph && another.parent == this) {
-            return another.size
-        } else throw UnsupportedOperationException("Complicated and not needed")
-    }
 }
 
 class SubGraph : AbsGraph {
@@ -87,20 +79,6 @@ class SubGraph : AbsGraph {
     fun clone() = SubGraph(size, verticesMask.clone(), parent)
     override fun contains(vertex: Vertex): Boolean {
         return verticesMask[vertex]
-    }
-
-    override fun intersectionCount(another: Graph): Int {
-        return when {
-            another == parent -> size
-            another is SubGraph && another.parent == parent -> {
-                if (size < another.size) {
-                    verticesMask dot another.verticesMask
-                } else {
-                    another.verticesMask dot verticesMask
-                }
-            }
-            else -> throw UnsupportedOperationException("Complicated and not needed")
-        }
     }
 
     fun remove(vertex: Vertex) {
