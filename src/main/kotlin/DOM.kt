@@ -32,8 +32,7 @@ class DOM(
 
         return findBestSubGraph(subGraphs) { consumer ->
             while (peeler.candidate.size > 3) {
-                val minVertex = peeler.getWorstVertex()
-                peeler.remove(minVertex)
+                peeler.removeWorstVertex()
                 val pair = peeler.marginalGainModified(subGraphs)
                 consumer(pair)
 
