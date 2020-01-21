@@ -96,6 +96,6 @@ class SubGraph : AbsGraph {
     }
 
     override fun equals(other: Any?): Boolean {
-        return other is SubGraph && other.parent == parent && other.verticesMask.contentEquals(verticesMask)
+        return other is SubGraph && other.parent == parent && other.size == size && other.verticesMask.contentEquals(verticesMask)
     }
 }

@@ -1,6 +1,6 @@
 class Peeler(
     val graph: BaseGraph,
-    val subGraphs: Set<SubGraph>,
+    val subGraphs: List<SubGraph>,
     val lambda: Double
 ) {
     val candidate = graph.toSubGraph()
@@ -10,12 +10,12 @@ class Peeler(
     private val weights = DoubleArray(graph.size) { vertex ->
         degrees[vertex] - 4 * lambda * subGraphs.count { vertex in it }
     }
-    private val intersectionCount = subGraphs.associateWithTo(HashMap()) { it.size }
+    private val intersectionCount = subGraphs.mapTo(ArrayList(subGraphs.size)) { it.size }
     private val vertexPriorityQueue = VertexPriorityQueue(graph.size, weights, candidate.verticesMask)
     val candidateDensity get() = candidateEdges.toDouble() / candidate.size
 
-    fun getIntersectionSize(another: SubGraph): Int {
-        return intersectionCount.getValue(another)
+    fun getIntersectionSize(subGraphIndex: Int): Int {
+        return intersectionCount[subGraphIndex]
     }
 
     fun removeWorstVertex() {
@@ -38,8 +38,8 @@ class Peeler(
                 }
             }
         }
-        subGraphs.forIf({ vertex in it }) { g ->
-            intersectionCount.computeIfPresent(g) { _, v -> v - 1 }
+        subGraphs.forIf({ vertex in it }) { g, index ->
+            intersectionCount[index]--
             g.forEachVertex { v ->
                 editWeight(v) {
                     weights[v] += 4 * lambda / g.size
@@ -64,8 +64,8 @@ class Peeler(
             }
         }
         candidateEdges += degrees[vertex]
-        subGraphs.forIf({ vertex in it }) { g ->
-            intersectionCount.computeIfPresent(g) { _, v -> v + 1 }
+        subGraphs.forIf({ vertex in it }) { g, index ->
+            intersectionCount[index]++
             g.forEachVertex { v ->
                 editWeight(v) {
                     weights[v] -= 4 * lambda / g.size

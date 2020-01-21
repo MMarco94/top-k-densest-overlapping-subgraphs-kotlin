@@ -1,7 +1,15 @@
-inline fun <T> Collection<T>.forIf(condition: (T) -> Boolean, f: (T) -> Unit) {
-    forEach {
-        if (condition(it)) f(it)
+inline fun <T> Collection<T>.forIf(condition: (T) -> Boolean, f: (T, index: Int) -> Unit) {
+    forEachIndexed { index, t ->
+        if (condition(t)) f(t, index)
     }
+}
+
+inline fun <T> List<T>.sumByDoubleIndexed(f: (T, index: Int) -> Double): Double {
+    var sum: Double = 0.0
+    for (i in indices) {
+        sum += f(get(i), i)
+    }
+    return sum
 }
 
 operator fun <K, V> Map<K, List<V>>.plus(another: Map<K, List<V>>): Map<K, List<V>> {
@@ -28,17 +36,4 @@ inline fun SubGraph.forEachVertex(f: (vertexId: Int) -> Unit) {
             f(vertex)
         }
     }
-}
-
-inline fun SubGraph.minVertexBy(f: (Vertex) -> Double): Vertex {
-    var min: Vertex? = null
-    var minVal = 0.0
-    forEachVertex { v ->
-        val score = f(v)
-        if (min == null || score < minVal) {
-            min = v
-            minVal = score
-        }
-    }
-    return min!!
 }

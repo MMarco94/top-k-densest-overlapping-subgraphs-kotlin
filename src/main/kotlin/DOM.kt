@@ -8,7 +8,7 @@ class DOM(
      * Pag. 31, Algorithm 1
      */
     fun getDenseOverlappingSubGraphs(): Sequence<Graph> {
-        return generateSequence(setOf<SubGraph>()) {
+        return generateSequence(listOf<SubGraph>()) {
             it.plus(peel(it))
         }
             .drop(1)
@@ -18,16 +18,16 @@ class DOM(
     /**
      * Pag. 12, problem 4
      */
-    private fun Peeler.marginalGain(subGraphs: Set<SubGraph>): Double {
-        return candidateDensity / 2 + lambda * subGraphs.sumByDouble {
-            distance(candidate, it) { getIntersectionSize(it) }
+    private fun Peeler.marginalGain(subGraphs: List<SubGraph>): Double {
+        return candidateDensity / 2 + lambda * subGraphs.sumByDoubleIndexed { g, index ->
+            distance(candidate, g) { getIntersectionSize(index) }
         }
     }
 
     /**
      * Pag. 14, algorithm 2
      */
-    private fun peel(subGraphs: Set<SubGraph>): SubGraph {
+    private fun peel(subGraphs: List<SubGraph>): SubGraph {
         val peeler = Peeler(graph, subGraphs, lambda)
 
         return findBestSubGraph(subGraphs) { consumer ->
@@ -45,7 +45,7 @@ class DOM(
     /**
      * Pag. 14, algorithm 3
      */
-    private fun Peeler.marginalGainModified(subGraphs: Set<SubGraph>): Pair<SubGraph, Double>? {
+    private fun Peeler.marginalGainModified(subGraphs: List<SubGraph>): Pair<SubGraph, Double>? {
         return if (candidate in subGraphs) {
             findBestSubGraph(subGraphs) { consumer ->
                 graph.vertices.filter { it !in this.candidate }.forEach {
@@ -68,11 +68,11 @@ class DOM(
      * Replace U with a trivial subgraph of size 3.
      * Note: The wedge has nothing to do with candidate
      */
-    private fun findWedge(subGraphs: Set<Graph>): SubGraph {
+    private fun findWedge(subGraphs: List<SubGraph>): SubGraph {
         return graph.allWedges.first { it !in subGraphs }
     }
 
-    private inline fun findBestSubGraph(subGraphs: Set<Graph>, producer: (consumer: (Pair<SubGraph, Double>?) -> Unit) -> Unit): Pair<SubGraph, Double>? {
+    private inline fun findBestSubGraph(subGraphs: List<SubGraph>, producer: (consumer: (Pair<SubGraph, Double>?) -> Unit) -> Unit): Pair<SubGraph, Double>? {
         var bestCandidate: SubGraph? = null
         var bestCandidateScore = Double.MIN_VALUE
 
