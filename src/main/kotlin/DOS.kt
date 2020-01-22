@@ -49,15 +49,15 @@ class DOS(
         return if (candidate in subGraphs) {
             findBestSubGraph(subGraphs) { consumer ->
                 graph.vertices.filter { it !in this.candidate }.forEach {
-                    add(it)
+                    addTemporary(it)
                     consumer(candidate to marginalGain(subGraphs))
-                    remove(it)
+                    restoreTemporary()
                 }
 
                 this.candidate.vertices.forEach {
-                    remove(it)
+                    removeTemporary(it)
                     consumer(candidate to marginalGain(subGraphs))
-                    add(it)
+                    restoreTemporary()
                 }
             }
         } else candidate to marginalGain(subGraphs)

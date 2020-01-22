@@ -7,11 +7,15 @@ class Peeler(
 
     private var candidateEdges = graph.edges.size
     val candidateDensity get() = candidateEdges.toDouble() / candidate.size
+
     private val degrees = IntArray(graph.size) { graph.edgesMap[it].size }
     private val weights = DoubleArray(graph.size) { vertex ->
         degrees[vertex] - 4 * lambda * subGraphs.count { vertex in it }
     }
     private val intersectionCount = subGraphs.mapTo(ArrayList(subGraphs.size)) { it.size }
+
+    private var temporaryVertex: Vertex = -1
+    private var temporaryIsAdd = false
 
     //TODO: improve heusristic
     /**
@@ -26,7 +30,10 @@ class Peeler(
         return intersectionCount[subGraphIndex]
     }
 
+    private fun checkNoTemporaryOperation() = check(temporaryVertex < 0)
+
     fun removeWorstVertex() {
+        checkNoTemporaryOperation()
         if (vertexPriorityQueue == null) {
             remove(candidate.minVertexBy { weights[it] })
         } else {
@@ -34,62 +41,92 @@ class Peeler(
         }
     }
 
-    fun remove(vertex: Vertex) {
+    fun removeTemporary(vertex: Vertex) {
+        checkNoTemporaryOperation()
+        temporaryVertex = vertex
+        temporaryIsAdd = false
+        remove(vertex, false)
+    }
+
+
+    fun addTemporary(vertex: Vertex) {
+        checkNoTemporaryOperation()
+        temporaryVertex = vertex
+        temporaryIsAdd = true
+        add(vertex, false)
+    }
+
+    fun restoreTemporary() {
+        check(temporaryVertex >= 0)
+        if (temporaryIsAdd) {
+            remove(temporaryVertex, false)
+        } else {
+            add(temporaryVertex, false)
+        }
+        temporaryVertex = -1
+    }
+
+    private fun remove(vertex: Vertex, updateQueue: Boolean = true) {
         candidateEdges -= degrees[vertex]
-        editWeight(vertex) {
+        editWeight(vertex, updateQueue) {
             candidate.remove(vertex)
         }
+        forEachConnectedVertex(vertex, updateQueue) { v, count ->
+            weights[v] -= count.toDouble()
+            degrees[v] -= count
+        }
+        forEachVertexInSubGraphs(vertex, updateQueue) { g, v ->
+            weights[v] += 4 * lambda / g.size
+        }
+    }
+
+    private fun add(vertex: Vertex, updateQueue: Boolean = true) {
+        editWeight(vertex, updateQueue) {
+            candidate.add(vertex)
+        }
+        forEachConnectedVertex(vertex, updateQueue) { v, count ->
+            weights[v] += count.toDouble()
+            degrees[v] += count
+        }
+        candidateEdges += degrees[vertex]
+        forEachVertexInSubGraphs(vertex, updateQueue) { g, v ->
+            weights[v] -= 4 * lambda / g.size
+        }
+    }
+
+    private inline fun forEachConnectedVertex(vertex: Vertex, updateQueue: Boolean, f: (v: Vertex, count: Int) -> Unit) {
+        var vertexCount = 0
         graph.edgesMap[vertex].forEach { e ->
-            if (e.otherVertex(vertex) in candidate) {
-                degrees[e.a]--
-                degrees[e.b]--
-                editWeight(e.a) {
-                    weights[e.a]--
+            val other = e.otherVertex(vertex)
+            if (other in candidate) {
+                editWeight(other, updateQueue) {
+                    f(other, 1)
                 }
-                editWeight(e.b) {
-                    weights[e.b]--
-                }
+                vertexCount++
             }
         }
+        if (vertexCount > 0) {
+            editWeight(vertex, updateQueue) {
+                f(vertex, vertexCount)
+            }
+        }
+    }
+
+    private inline fun forEachVertexInSubGraphs(vertex: Vertex, updateQueue: Boolean, f: (subGraph: SubGraph, v: Vertex) -> Unit) {
         subGraphs.forIf({ vertex in it }) { g, index ->
             intersectionCount[index]--
             g.forEachVertex { v ->
-                editWeight(v) {
-                    weights[v] += 4 * lambda / g.size
+                editWeight(v, updateQueue) {
+                    f(g, v)
                 }
             }
         }
     }
 
-    fun add(vertex: Vertex) {
-        editWeight(vertex) {
-            candidate.add(vertex)
-        }
-        graph.edgesMap[vertex].forEach { e ->
-            if (e.otherVertex(vertex) in candidate) {
-                degrees[e.a]++
-                degrees[e.b]++
-                editWeight(e.b) {
-                    weights[e.b]++
-                }
-                editWeight(e.a) {
-                    weights[e.a]++
-                }
-            }
-        }
-        candidateEdges += degrees[vertex]
-        subGraphs.forIf({ vertex in it }) { g, index ->
-            intersectionCount[index]++
-            g.forEachVertex { v ->
-                editWeight(v) {
-                    weights[v] -= 4 * lambda / g.size
-                }
-            }
-        }
-    }
-
-    private inline fun editWeight(v: Vertex, f: () -> Unit) {
+    private inline fun editWeight(v: Vertex, updateQueue: Boolean, f: () -> Unit) {
         f()
-        vertexPriorityQueue?.notifyVertexWeightChanged(v)
+        if (updateQueue) {
+            vertexPriorityQueue?.notifyVertexWeightChanged(v)
+        }
     }
 }
