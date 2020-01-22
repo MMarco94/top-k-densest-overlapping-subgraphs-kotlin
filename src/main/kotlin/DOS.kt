@@ -1,4 +1,4 @@
-class DOM(
+class DOS(
     val graph: BaseGraph,
     val lambda: Double,
     val distance: Distance = MetricDistance

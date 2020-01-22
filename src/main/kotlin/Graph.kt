@@ -18,7 +18,7 @@ interface Graph {
 
 abstract class AbsGraph : Graph {
     abstract override fun equals(other: Any?): Boolean
-    override fun hashCode(): Int = size
+    override fun hashCode(): Int = throw UnsupportedOperationException("Complicated and not needed")
 }
 
 class BaseGraph(override val size: Int, val edges: Set<Edge>) : AbsGraph() {

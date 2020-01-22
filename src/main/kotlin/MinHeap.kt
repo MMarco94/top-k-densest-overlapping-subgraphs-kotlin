@@ -16,10 +16,6 @@ abstract class MinHeap(
         return heap[0]
     }
 
-    private fun isGt(a: Int, b: Int): Boolean {
-        return getWeight(heap[a]) > getWeight(heap[b])
-    }
-
     protected fun notifyComparisonChanged(elem: Int) {
         val pos = reverseIndexes[elem]
         minHeapify(pos)
@@ -39,39 +35,40 @@ abstract class MinHeap(
     }
 
     private fun swap(a: Int, b: Int) {
-        swapReverse(heap[a], heap[b])
-        val tmp = heap[a]
-        heap[a] = heap[b]
-        heap[b] = tmp
+        val ha = heap[a]
+        val hb = heap[b]
+        val tmp = reverseIndexes[ha]
+        reverseIndexes[ha] = reverseIndexes[hb]
+        reverseIndexes[hb] = tmp
+        heap[a] = hb
+        heap[b] = ha
     }
-
-    private fun swapReverse(a: Int, b: Int) {
-        val tmp = reverseIndexes[a]
-        reverseIndexes[a] = reverseIndexes[b]
-        reverseIndexes[b] = tmp
-    }
-
 
     private fun bubbleUp(pos: Int) {
         var current = pos
-        while (current > 0 && isGt(parent(current), current)) {
+        val currentWeight = getWeight(heap[pos])
+        while (current > 0 && getWeight(heap[parent(pos)]) > currentWeight) {
             swap(current, parent(current))
             current = parent(current)
         }
     }
 
-    private fun minHeapify(pos: Int) {
+    private fun minHeapify(pos: Int, posWeight: Double = getWeight(heap[pos])) {
         val leftChild = leftChild(pos)
         val rightChild = rightChild(pos)
         val hasLeftChild = leftChild < size
         val hasRightChild = rightChild < size
-        if ((hasLeftChild && isGt(pos, leftChild)) || (hasRightChild && isGt(pos, rightChild))) {
-            if (hasRightChild && isGt(leftChild, rightChild)) {
+
+        val leftWeight = if (!hasLeftChild) -1.0 else getWeight(heap[leftChild])
+        val rightWeight = if (!hasRightChild) -1.0 else getWeight(heap[rightChild])
+        if ((hasLeftChild && posWeight > leftWeight) || (hasRightChild && posWeight > rightWeight)) {
+
+            if (hasRightChild && leftWeight > rightWeight) {
                 swap(pos, rightChild)
-                minHeapify(rightChild)
+                minHeapify(rightChild, posWeight)
             } else if (hasLeftChild) {
                 swap(pos, leftChild)
-                minHeapify(leftChild)
+                minHeapify(leftChild, posWeight)
             } else throw IllegalStateException()
         }
     }
