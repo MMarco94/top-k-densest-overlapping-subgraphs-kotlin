@@ -48,14 +48,15 @@ class DOS(
     private fun Peeler.marginalGainModified(subGraphs: List<SubGraph>): Pair<SubGraph, Double>? {
         return if (candidate in subGraphs) {
             findBestSubGraph(subGraphs) { consumer ->
-                graph.vertices.filter { it !in this.candidate }.forEach {
-                    addTemporary(it)
-                    consumer(candidate to marginalGain(subGraphs))
-                    restoreTemporary()
+                graph.forEachVertex { v ->
+                    if (v !in this.candidate) {
+                        addTemporary(v)
+                        consumer(candidate to marginalGain(subGraphs))
+                        restoreTemporary()
+                    }
                 }
-
-                this.candidate.vertices.forEach {
-                    removeTemporary(it)
+                this.candidate.forEachVertex { v ->
+                    removeTemporary(v)
                     consumer(candidate to marginalGain(subGraphs))
                     restoreTemporary()
                 }

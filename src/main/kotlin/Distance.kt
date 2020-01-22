@@ -14,8 +14,10 @@ interface Distance {
  */
 object MetricDistance : Distance {
     override operator fun invoke(g1: Graph, g2: Graph, intersectionComputer: () -> Int): Double {
-        return if (g1 != g2) {
-            2 - intersectionComputer().toDouble().pow(2) / (g1.size * g2.size)
+        val intersection = intersectionComputer()
+        val areEqual = g1.size == g2.size && g1.size == intersection
+        return if (!areEqual) {
+            2 - intersection.toDouble().pow(2) / (g1.size * g2.size)
         } else 0.0
     }
 }

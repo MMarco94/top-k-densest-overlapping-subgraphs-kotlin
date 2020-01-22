@@ -75,7 +75,7 @@ class Peeler(
             weights[v] -= count.toDouble()
             degrees[v] -= count
         }
-        forEachVertexInSubGraphs(vertex, updateQueue) { g, v ->
+        forEachSubGraphs(vertex, updateQueue, { _, sgi -> intersectionCount[sgi]-- }) { g, v ->
             weights[v] += 4 * lambda / g.size
         }
     }
@@ -89,7 +89,7 @@ class Peeler(
             degrees[v] += count
         }
         candidateEdges += degrees[vertex]
-        forEachVertexInSubGraphs(vertex, updateQueue) { g, v ->
+        forEachSubGraphs(vertex, updateQueue, { _, sgi -> intersectionCount[sgi]++ }) { g, v ->
             weights[v] -= 4 * lambda / g.size
         }
     }
@@ -112,9 +112,9 @@ class Peeler(
         }
     }
 
-    private inline fun forEachVertexInSubGraphs(vertex: Vertex, updateQueue: Boolean, f: (subGraph: SubGraph, v: Vertex) -> Unit) {
+    private inline fun forEachSubGraphs(vertex: Vertex, updateQueue: Boolean, sg: (SubGraph, subGraphIndex: Int) -> Unit, f: (subGraph: SubGraph, v: Vertex) -> Unit) {
         subGraphs.forIf({ vertex in it }) { g, index ->
-            intersectionCount[index]--
+            sg(g, index)
             g.forEachVertex { v ->
                 editWeight(v, updateQueue) {
                     f(g, v)
