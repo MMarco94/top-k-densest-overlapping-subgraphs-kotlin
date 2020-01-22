@@ -6,10 +6,10 @@ import java.util.regex.Pattern
 data class City(val id: Long)
 
 fun main() {
-    val dataset = "../dbbox_Latin-America"
+    val dataset = "dbbox_Latin-America"
     //val dataset = "K5_s30-0_n2d0_#0"
-    val verticesFile = File("src/test/resources/synth/$dataset.labels")
-    val edgesFile = File("src/test/resources/synth/$dataset.edgelist")
+    val verticesFile = File("src/test/resources/$dataset.labels")
+    val edgesFile = File("src/test/resources/$dataset.edgelist")
     val pattern = "(\\d+)\\s+(\\d+)".toPattern()
 
     val cities = verticesFile.readLines().map { City(it.split("\\s+".toRegex()).first().toLong()) }.toSet()

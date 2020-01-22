@@ -1,5 +1,5 @@
 class DOS(
-    val graph: BaseGraph,
+    val graph: Graph,
     val lambda: Double,
     val distance: Distance = MetricDistance
 ) {
@@ -7,7 +7,7 @@ class DOS(
     /**
      * Pag. 31, Algorithm 1
      */
-    fun getDenseOverlappingSubGraphs(): Sequence<Graph> {
+    fun getDenseOverlappingSubGraphs(): Sequence<SubGraph> {
         return generateSequence(listOf<SubGraph>()) {
             it.plus(peel(it))
         }
@@ -20,7 +20,7 @@ class DOS(
      */
     private fun Peeler.marginalGain(subGraphs: List<SubGraph>): Double {
         return candidateDensity / 2 + lambda * subGraphs.sumByDoubleIndexed { g, index ->
-            distance(candidate, g) { getIntersectionSize(index) }
+            distance(candidate, g, getIntersectionSize(index))
         }
     }
 

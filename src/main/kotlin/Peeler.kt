@@ -1,5 +1,5 @@
 class Peeler(
-    val graph: BaseGraph,
+    val graph: Graph,
     val subGraphs: List<SubGraph>,
     val lambda: Double
 ) {
@@ -12,7 +12,7 @@ class Peeler(
     private val weights = DoubleArray(graph.size) { vertex ->
         degrees[vertex] - 4 * lambda * subGraphs.count { vertex in it }
     }
-    private val intersectionCount = subGraphs.mapTo(ArrayList(subGraphs.size)) { it.size }
+    private val intersectionSize = subGraphs.mapTo(ArrayList(subGraphs.size)) { it.size }
 
     private var temporaryVertex: Vertex = -1
     private var temporaryIsAdd = false
@@ -27,7 +27,7 @@ class Peeler(
     } else null
 
     fun getIntersectionSize(subGraphIndex: Int): Int {
-        return intersectionCount[subGraphIndex]
+        return intersectionSize[subGraphIndex]
     }
 
     private fun checkNoTemporaryOperation() = check(temporaryVertex < 0)
@@ -75,7 +75,7 @@ class Peeler(
             weights[v] -= count.toDouble()
             degrees[v] -= count
         }
-        forEachSubGraphs(vertex, updateQueue, { _, sgi -> intersectionCount[sgi]-- }) { g, v ->
+        forEachSubGraphs(vertex, updateQueue, { _, sgi -> intersectionSize[sgi]-- }) { g, v ->
             weights[v] += 4 * lambda / g.size
         }
     }
@@ -89,7 +89,7 @@ class Peeler(
             degrees[v] += count
         }
         candidateEdges += degrees[vertex]
-        forEachSubGraphs(vertex, updateQueue, { _, sgi -> intersectionCount[sgi]++ }) { g, v ->
+        forEachSubGraphs(vertex, updateQueue, { _, sgi -> intersectionSize[sgi]++ }) { g, v ->
             weights[v] -= 4 * lambda / g.size
         }
     }

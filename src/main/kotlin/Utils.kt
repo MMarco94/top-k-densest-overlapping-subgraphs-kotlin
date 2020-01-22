@@ -37,7 +37,7 @@ operator fun <K, V> Map<K, List<V>>.plus(another: Map<K, List<V>>): Map<K, List<
     return ret
 }
 
-inline fun BaseGraph.forEachVertex(f: (vertexId: Int) -> Unit) {
+inline fun Graph.forEachVertex(f: (vertexId: Int) -> Unit) {
     for (i in 0 until size) {
         f(i)
     }

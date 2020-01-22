@@ -10,19 +10,8 @@ data class Edge(val a: Vertex, val b: Vertex) {
     }
 }
 
-interface Graph {
-    val vertices: Sequence<Vertex>
-    val size: Int
-    operator fun contains(vertex: Vertex): Boolean
-}
-
-abstract class AbsGraph : Graph {
-    abstract override fun equals(other: Any?): Boolean
-    override fun hashCode(): Int = throw UnsupportedOperationException("Complicated and not needed")
-}
-
-class BaseGraph(override val size: Int, val edges: Set<Edge>) : AbsGraph() {
-    override val vertices = (0 until size).asSequence()
+class Graph(val size: Int, val edges: Set<Edge>) {
+    val vertices = (0 until size).asSequence()
     val edgesMap: Array<MutableList<Edge>> = Array(size) { mutableListOf<Edge>() }.also { arr ->
         edges.forEach { e ->
             arr[e.a].add(e)
@@ -49,50 +38,43 @@ class BaseGraph(override val size: Int, val edges: Set<Edge>) : AbsGraph() {
         BooleanArray(vertices.size) { it in vertices },
         this
     )
-
-    override fun contains(vertex: Vertex) = vertex < size
-
-    override fun equals(other: Any?): Boolean {
-        return other === this
-    }
 }
 
-class SubGraph : AbsGraph {
-    val parent: BaseGraph
+class SubGraph {
+    val parent: Graph
 
     val verticesMask: BooleanArray
-    override val vertices get() = parent.vertices.filter { verticesMask[it] }
-    override var size: Int
+    val vertices get() = parent.vertices.filter { verticesMask[it] }
+    var size: Int
 
-    constructor(parent: BaseGraph) {
+    constructor(parent: Graph) {
         this.verticesMask = BooleanArray(parent.size) { true }
         this.parent = parent
         this.size = parent.size
     }
 
-    constructor(size: Int, verticesMask: BooleanArray, parent: BaseGraph) {
+    constructor(size: Int, verticesMask: BooleanArray, parent: Graph) {
         this.verticesMask = verticesMask
         this.parent = parent
         this.size = size
     }
 
     fun clone() = SubGraph(size, verticesMask.clone(), parent)
-    override fun contains(vertex: Vertex): Boolean {
+
+    operator fun contains(vertex: Vertex): Boolean {
         return verticesMask[vertex]
     }
 
     fun remove(vertex: Vertex) {
-        if (verticesMask[vertex]) {
-            verticesMask[vertex] = false
-            size--
-        } else throw IllegalStateException()
+        require(verticesMask[vertex])
+        verticesMask[vertex] = false
+        size--
     }
 
     fun add(vertex: Vertex) {
-        if (!verticesMask[vertex]) {
-            verticesMask[vertex] = true
-            size++
-        } else throw IllegalStateException()
+        require(!verticesMask[vertex])
+        verticesMask[vertex] = true
+        size++
     }
 
     override fun equals(other: Any?): Boolean {
