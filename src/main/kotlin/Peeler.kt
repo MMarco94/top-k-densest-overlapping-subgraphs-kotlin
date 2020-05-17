@@ -12,9 +12,6 @@ class Peeler(
     val candidateDensity get() = candidateEdges.toDouble() / candidate.size
 
     private val degrees = IntArray(graph.size) { graph.edgesMap[it].size }
-    private val newWeights = DoubleArray(graph.size) { vertex ->
-        degrees[vertex].toDouble()
-    }
     private val intersectionSize = subGraphs.mapTo(ArrayList(subGraphs.size)) { it.size }
 
     private var temporaryVertex: Vertex = -1
@@ -24,7 +21,7 @@ class Peeler(
         -4 * lambda * subGraphs.indices.count { pk.inSubGraph(it) }
     }
     private val partitionsQueue: Map<PartitionKey, SubGraphPriorityQueue> = currentResult.partitions.mapValues { (_, subGraph) ->
-        SubGraphPriorityQueue(subGraph, newWeights, candidate.verticesMask)
+        SubGraphPriorityQueue(subGraph, degrees, candidate.verticesMask)
     }
 
     fun getIntersectionSize(subGraphIndex: Int): Int {
@@ -72,7 +69,6 @@ class Peeler(
             candidate.remove(vertex)
         }
         forEachConnectedVertex(vertex, updateQueue) { v, count ->
-            newWeights[v] -= count.toDouble()
             degrees[v] -= count
         }
         forEachSubGraphs(vertex) { _, sgi ->
@@ -94,7 +90,6 @@ class Peeler(
             candidate.add(vertex)
         }
         forEachConnectedVertex(vertex, updateQueue) { v, count ->
-            newWeights[v] += count.toDouble()
             degrees[v] += count
         }
         candidateEdges += degrees[vertex]

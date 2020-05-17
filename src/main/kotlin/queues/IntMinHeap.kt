@@ -1,6 +1,6 @@
 package queues
 
-abstract class MinHeap(
+abstract class IntMinHeap(
     private val size: Int
 ) {
     private val heap = IntArray(size) { it }
@@ -12,7 +12,7 @@ abstract class MinHeap(
         }
     }
 
-    abstract fun getWeight(pos: Int): Double
+    abstract fun getWeight(pos: Int): Int
 
     fun head(): Int {
         return heap[0]
@@ -55,14 +55,14 @@ abstract class MinHeap(
         }
     }
 
-    private fun minHeapify(pos: Int, posWeight: Double = getWeight(heap[pos])) {
+    private fun minHeapify(pos: Int, posWeight: Int = getWeight(heap[pos])) {
         val leftChild = leftChild(pos)
         val rightChild = rightChild(pos)
         val hasLeftChild = leftChild < size
         val hasRightChild = rightChild < size
 
-        val leftWeight = if (!hasLeftChild) -1.0 else getWeight(heap[leftChild])
-        val rightWeight = if (!hasRightChild) -1.0 else getWeight(heap[rightChild])
+        val leftWeight = if (!hasLeftChild) -1 else getWeight(heap[leftChild])
+        val rightWeight = if (!hasRightChild) -1 else getWeight(heap[rightChild])
         if ((hasLeftChild && posWeight > leftWeight) || (hasRightChild && posWeight > rightWeight)) {
 
             if (hasRightChild && leftWeight > rightWeight) {

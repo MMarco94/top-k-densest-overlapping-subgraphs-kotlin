@@ -5,18 +5,18 @@ import Vertex
 
 class SubGraphPriorityQueue(
     private val subGraph: SubGraph,
-    private val backingWeights: DoubleArray,
+    private val backingWeights: IntArray,
     private val isNotRemoved: BooleanArray
-) : MinHeap(subGraph.parent.size) {
+) : IntMinHeap(subGraph.parent.size) {
 
     init {
         minHeapify()
     }
 
-    override fun getWeight(pos: Vertex): Double {
+    override fun getWeight(pos: Vertex): Int {
         return if (subGraph.contains(pos) && isNotRemoved[pos]) {
             backingWeights[pos]
-        } else Double.MAX_VALUE
+        } else Int.MAX_VALUE
     }
 
     fun notifyVertexWeightChanged(v: Vertex) {
