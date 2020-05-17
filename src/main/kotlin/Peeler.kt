@@ -1,30 +1,31 @@
+import queues.SubGraphPriorityQueue
+
 class Peeler(
     val graph: Graph,
-    val subGraphs: List<SubGraph>,
+    val currentResult: DOSResult,
     val lambda: Double
 ) {
     val candidate = graph.toSubGraph()
 
+    private val subGraphs get() = currentResult.subGraphs
     private var candidateEdges = graph.edges.size
     val candidateDensity get() = candidateEdges.toDouble() / candidate.size
 
     private val degrees = IntArray(graph.size) { graph.edgesMap[it].size }
-    private val weights = DoubleArray(graph.size) { vertex ->
-        degrees[vertex] - 4 * lambda * subGraphs.count { vertex in it }
+    private val newWeights = DoubleArray(graph.size) { vertex ->
+        degrees[vertex].toDouble()
     }
     private val intersectionSize = subGraphs.mapTo(ArrayList(subGraphs.size)) { it.size }
 
     private var temporaryVertex: Vertex = -1
     private var temporaryIsAdd = false
 
-    //TODO: improve heusristic
-    /**
-     * Using the min heap is not worth it if n of the other subgraph has "too many" vertices.
-     * It that case, updating the heap is far worst than just doing a linear scan
-     */
-    private val vertexPriorityQueue = if (subGraphs.none { it.size > graph.size / 2 }) {
-        VertexPriorityQueue(graph.size, weights, candidate.verticesMask)
-    } else null
+    private val partitionsWeight: MutableMap<PartitionKey, Double> = currentResult.partitions.mapValuesTo(HashMap()) { (pk, _) ->
+        -4 * lambda * subGraphs.indices.count { pk.inSubGraph(it) }
+    }
+    private val partitionsQueue: Map<PartitionKey, SubGraphPriorityQueue> = currentResult.partitions.mapValues { (_, subGraph) ->
+        SubGraphPriorityQueue(subGraph, newWeights, candidate.verticesMask)
+    }
 
     fun getIntersectionSize(subGraphIndex: Int): Int {
         return intersectionSize[subGraphIndex]
@@ -34,11 +35,10 @@ class Peeler(
 
     fun removeWorstVertex() {
         checkNoTemporaryOperation()
-        if (vertexPriorityQueue == null) {
-            remove(candidate.minVertexBy { weights[it] })
-        } else {
-            remove(vertexPriorityQueue.head())
-        }
+        val minUsingPartitions = partitionsQueue.entries.minBy { (pk, queue) ->
+            partitionsWeight.getValue(pk) + queue.getWeight(queue.head())
+        }!!
+        remove(minUsingPartitions.value.head())
     }
 
     fun removeTemporary(vertex: Vertex) {
@@ -72,11 +72,20 @@ class Peeler(
             candidate.remove(vertex)
         }
         forEachConnectedVertex(vertex, updateQueue) { v, count ->
-            weights[v] -= count.toDouble()
+            newWeights[v] -= count.toDouble()
             degrees[v] -= count
         }
-        forEachSubGraphs(vertex, updateQueue, { _, sgi -> intersectionSize[sgi]-- }) { g, v ->
-            weights[v] += 4 * lambda / g.size
+        forEachSubGraphs(vertex) { _, sgi ->
+            intersectionSize[sgi]--
+        }
+        updatePartitionsWeights { pk, w ->
+            var newW = w
+            forEachSubGraphs(vertex) { sg, index ->
+                if (pk.inSubGraph(index)) {
+                    newW += 4 * lambda / sg.size
+                }
+            }
+            newW
         }
     }
 
@@ -85,12 +94,27 @@ class Peeler(
             candidate.add(vertex)
         }
         forEachConnectedVertex(vertex, updateQueue) { v, count ->
-            weights[v] += count.toDouble()
+            newWeights[v] += count.toDouble()
             degrees[v] += count
         }
         candidateEdges += degrees[vertex]
-        forEachSubGraphs(vertex, updateQueue, { _, sgi -> intersectionSize[sgi]++ }) { g, v ->
-            weights[v] -= 4 * lambda / g.size
+        forEachSubGraphs(vertex) { _, sgi ->
+            intersectionSize[sgi]++
+        }
+        updatePartitionsWeights { pk, w ->
+            var newW = w
+            forEachSubGraphs(vertex) { sg, index ->
+                if (pk.inSubGraph(index)) {
+                    newW -= 4 * lambda / sg.size
+                }
+            }
+            newW
+        }
+    }
+
+    private inline fun updatePartitionsWeights(newWeightComputer: (PartitionKey, oldWeight: Double) -> Double) {
+        partitionsWeight.iterator().forEach {
+            it.setValue(newWeightComputer(it.key, it.value))
         }
     }
 
@@ -112,21 +136,16 @@ class Peeler(
         }
     }
 
-    private inline fun forEachSubGraphs(vertex: Vertex, updateQueue: Boolean, sg: (SubGraph, subGraphIndex: Int) -> Unit, f: (subGraph: SubGraph, v: Vertex) -> Unit) {
+    private inline fun forEachSubGraphs(vertex: Vertex, sg: (SubGraph, subGraphIndex: Int) -> Unit) {
         subGraphs.forIf({ vertex in it }) { g, index ->
             sg(g, index)
-            g.forEachVertex { v ->
-                editWeight(v, updateQueue) {
-                    f(g, v)
-                }
-            }
         }
     }
 
     private inline fun editWeight(v: Vertex, updateQueue: Boolean, f: () -> Unit) {
         f()
         if (updateQueue) {
-            vertexPriorityQueue?.notifyVertexWeightChanged(v)
+            partitionsQueue.forEach { it.value.notifyVertexWeightChanged(v) }
         }
     }
 }

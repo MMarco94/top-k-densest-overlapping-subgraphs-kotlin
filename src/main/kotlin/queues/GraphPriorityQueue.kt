@@ -1,4 +1,8 @@
-class VertexPriorityQueue(
+package queues
+
+import Vertex
+
+class GraphPriorityQueue(
     size: Int,
     private val backingWeights: DoubleArray,
     private val isNotRemoved: BooleanArray

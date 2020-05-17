@@ -1,3 +1,4 @@
+import queues.pqUpdates
 import java.io.File
 import java.time.Duration
 import java.time.Instant
@@ -27,11 +28,11 @@ fun main() {
     println("${cities.size} vertices; ${edges.size} edges")
 
     val start = Instant.now()
-    val subGraphs = DOS(graph, 0.25).getDenseOverlappingSubGraphs().take(10).toList()
+    val subGraphs = DOS(graph, 0.25).getDenseOverlappingSubGraphs().elementAt(10)
     val took = Duration.between(start, Instant.now())
     println("Creating sub-graphs took $took")
 
-    subGraphs.forEach { denseSubGraph ->
+    subGraphs.subGraphs.forEach { denseSubGraph ->
         val cities = denseSubGraph.vertices.map { idReassigner.getInitialVertex(it) }
         println("${denseSubGraph.size}: " + cities.sortedBy { it.id }.joinToString { it.id.toString() })
     }

@@ -7,12 +7,10 @@ class DOS(
     /**
      * Pag. 31, Algorithm 1
      */
-    fun getDenseOverlappingSubGraphs(): Sequence<SubGraph> {
-        return generateSequence(listOf<SubGraph>()) {
-            it.plus(peel(it))
+    fun getDenseOverlappingSubGraphs(): Sequence<DOSResult> {
+        return generateSequence(DOSResult(this, emptyList())) {
+            it.add(peel(it))
         }
-            .drop(1)
-            .map { it.last() }
     }
 
     /**
@@ -27,19 +25,20 @@ class DOS(
     /**
      * Pag. 14, algorithm 2
      */
-    private fun peel(subGraphs: List<SubGraph>): SubGraph {
-        val peeler = Peeler(graph, subGraphs, lambda)
+    private fun peel(currentState: DOSResult): SubGraph {
+        val peeler = Peeler(graph, currentState, lambda)
 
-        return findBestSubGraph(subGraphs) { consumer ->
+        val best = findBestSubGraph(currentState.subGraphs) { consumer ->
             while (peeler.candidate.size > 3) {
                 peeler.removeWorstVertex()
-                val pair = peeler.marginalGainModified(subGraphs)
+                val pair = peeler.marginalGainModified(currentState.subGraphs)
                 consumer(pair)
 
                 //I already encountered this subgraph, and all its trivial modifications. I can break
                 if (pair == null) break
             }
-        }?.first ?: findWedge(subGraphs)
+        }
+        return best?.first ?: findWedge(currentState.subGraphs)
     }
 
     /**

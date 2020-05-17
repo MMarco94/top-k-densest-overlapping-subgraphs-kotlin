@@ -1,3 +1,7 @@
+package queues
+
+var pqUpdates = 0
+
 abstract class MinHeap(
     private val size: Int
 ) {

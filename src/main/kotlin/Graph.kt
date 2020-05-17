@@ -33,6 +33,8 @@ class Graph(val size: Int, val edges: Set<Edge>) {
     }.map { subGraph(it) }
 
     fun toSubGraph() = SubGraph(this)
+    fun toEmptySubGraph() = SubGraph(0, BooleanArray(size), this)
+
     private fun subGraph(vertices: Set<Vertex>) = SubGraph(
         vertices.size,
         BooleanArray(vertices.size) { it in vertices },
@@ -79,5 +81,9 @@ class SubGraph {
 
     override fun equals(other: Any?): Boolean {
         return other is SubGraph && other.parent == parent && other.size == size && other.verticesMask.contentEquals(verticesMask)
+    }
+
+    override fun toString(): String {
+        return vertices.joinToString { it.toString() }
     }
 }
