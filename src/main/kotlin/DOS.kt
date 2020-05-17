@@ -22,10 +22,18 @@ class DOS(
         }
     }
 
+    private fun OldPeeler.marginalGain(subGraphs: List<SubGraph>): Double {
+        return candidateDensity / 2 + lambda * subGraphs.sumByDoubleIndexed { g, index ->
+            distance(candidate, g, getIntersectionSize(index))
+        }
+    }
+
     /**
      * Pag. 14, algorithm 2
      */
     private fun peel(currentState: DOSResult): SubGraph {
+        val start = System.nanoTime()
+
         val peeler = Peeler(graph, currentState, lambda)
 
         val best = findBestSubGraph(currentState.subGraphs) { consumer ->
@@ -38,13 +46,35 @@ class DOS(
                 if (pair == null) break
             }
         }
-        return best?.first ?: findWedge(currentState.subGraphs)
+        val ret = best?.first ?: findWedge(currentState.subGraphs)
+        val took = System.nanoTime() - start
+        println("Creating sub-graph took ${took / 1000_000_000.0}s")
+        return ret
     }
 
     /**
      * Pag. 14, algorithm 3
      */
     private fun Peeler.marginalGainModified(subGraphs: List<SubGraph>): Pair<SubGraph, Double>? {
+        return if (candidate in subGraphs) {
+            findBestSubGraph(subGraphs) { consumer ->
+                graph.forEachVertex { v ->
+                    if (v !in this.candidate) {
+                        addTemporary(v)
+                        consumer(candidate to marginalGain(subGraphs))
+                        restoreTemporary()
+                    }
+                }
+                this.candidate.forEachVertex { v ->
+                    removeTemporary(v)
+                    consumer(candidate to marginalGain(subGraphs))
+                    restoreTemporary()
+                }
+            }
+        } else candidate to marginalGain(subGraphs)
+    }
+
+    private fun OldPeeler.marginalGainModified(subGraphs: List<SubGraph>): Pair<SubGraph, Double>? {
         return if (candidate in subGraphs) {
             findBestSubGraph(subGraphs) { consumer ->
                 graph.forEachVertex { v ->
