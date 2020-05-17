@@ -47,7 +47,7 @@ abstract class MinHeap(
     private fun bubbleUp(pos: Int) {
         var current = pos
         val currentWeight = getWeight(heap[pos])
-        while (current > 0 && getWeight(heap[parent(pos)]) > currentWeight) {
+        while (current > 0 && getWeight(heap[parent(current)]) > currentWeight) {
             swap(current, parent(current))
             current = parent(current)
         }
