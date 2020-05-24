@@ -12,7 +12,7 @@ data class Edge(val a: Vertex, val b: Vertex) {
 
 class Graph(val size: Int, val edges: Set<Edge>) {
     val vertices = (0 until size).asSequence()
-    val edgesMap: Array<MutableList<Edge>> = Array(size) { mutableListOf<Edge>() }.also { arr ->
+    val edgesMap: List<List<Edge>> = List(size) { mutableListOf<Edge>() }.also { arr ->
         edges.forEach { e ->
             arr[e.a].add(e)
             arr[e.b].add(e)

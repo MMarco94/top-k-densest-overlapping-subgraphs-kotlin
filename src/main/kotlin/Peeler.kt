@@ -1,5 +1,5 @@
-import datastructure.VerticesLinkedList
 import datastructure.VerticesByDegreeQueue
+import datastructure.VerticesLinkedList
 
 class Peeler(val graph: Graph, val lambda: Double, val distance: Distance = MetricDistance) {
 
@@ -13,7 +13,7 @@ class Peeler(val graph: Graph, val lambda: Double, val distance: Distance = Metr
             n.resetDegree(graph)
             vertices.add(n)
         }
-        val emptyPartition = Partition(emptySet(), vertices)
+        val emptyPartition = Partition(emptyList(), vertices)
         partitions.add(emptyPartition)
     }
 
@@ -76,7 +76,7 @@ class Peeler(val graph: Graph, val lambda: Double, val distance: Distance = Metr
         }
         worst.oldPartition.vertices.add(removed)
         partitionsForCandidate.forEach { p ->
-            p.oldPartition.partitionKey.forEach { sg ->
+            p.oldPartition.partitionKey.noIteratorForEach { sg ->
                 if (sg.contains(removed.vertex)) {
                     p.peelWeight -= 4 * lambda / sg.size
                 }
@@ -103,7 +103,7 @@ class Peeler(val graph: Graph, val lambda: Double, val distance: Distance = Metr
 
     private inline fun forEachConnectedVertex(candidate: SubGraph, vertex: Vertex, f: (connected: Vertex, count: Int) -> Unit) {
         var vertexCount = 0
-        graph.edgesMap[vertex].forEach { e ->
+        graph.edgesMap[vertex].noIteratorForEach { e ->
             val other = e.otherVertex(vertex)
             if (other in candidate) {
                 f(other, 1)
@@ -116,7 +116,7 @@ class Peeler(val graph: Graph, val lambda: Double, val distance: Distance = Metr
     }
 
     private inner class Partition(
-        val partitionKey: Set<SubGraph>,
+        val partitionKey: List<SubGraph>,
         var vertices: VerticesByDegreeQueue
     ) {
 

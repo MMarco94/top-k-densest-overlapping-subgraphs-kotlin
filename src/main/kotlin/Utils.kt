@@ -4,6 +4,12 @@ inline fun <T> Collection<T>.forIf(condition: (T) -> Boolean, f: (T, index: Int)
     }
 }
 
+inline fun <T> List<T>.noIteratorForEach(f: (T) -> Unit) {
+    for(i in indices){
+        f(get(i))
+    }
+}
+
 inline fun <T> List<T>.sumByDoubleIndexed(f: (T, index: Int) -> Double): Double {
     var sum: Double = 0.0
     for (i in indices) {
