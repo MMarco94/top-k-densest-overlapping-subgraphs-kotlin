@@ -23,7 +23,7 @@ class VerticesLinkedList {
         var prev: Node? = null,
         var next: Node? = null,
         var degree: Int = 0,
-        var queue: VerticesByDegreeQueue? = null,//TODO: dipendenza circolare delle classi. Fare meglio
+        var queue: VerticesByDegreeQueue? = null,
         var list: VerticesLinkedList? = null
     ) {
 

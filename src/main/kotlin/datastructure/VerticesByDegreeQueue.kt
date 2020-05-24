@@ -1,10 +1,10 @@
 package datastructure
 
 import java.util.*
-import kotlin.collections.HashMap
 
 class VerticesByDegreeQueue(private val nodes: Array<VerticesLinkedList.Node>) {
     private class DegreeBucket(val degree: Int) : Comparable<DegreeBucket> {
+
         val vertices = VerticesLinkedList()
 
         override fun compareTo(other: DegreeBucket): Int {
@@ -13,7 +13,7 @@ class VerticesByDegreeQueue(private val nodes: Array<VerticesLinkedList.Node>) {
     }
 
     private val queue = PriorityQueue<DegreeBucket>()
-    private val buckets = HashMap<Int, DegreeBucket>()
+    private val buckets = SparseArray<DegreeBucket>()
 
     fun add(node: VerticesLinkedList.Node) {
         val degree = node.degree
@@ -21,9 +21,6 @@ class VerticesByDegreeQueue(private val nodes: Array<VerticesLinkedList.Node>) {
             DegreeBucket(degree).also { db ->
                 queue.add(db)
             }
-        }
-        if (node.list != null) {
-            node.remove()
         }
         node.add(this, bucket.vertices)
     }
