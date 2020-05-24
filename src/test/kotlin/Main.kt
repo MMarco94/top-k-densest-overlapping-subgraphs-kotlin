@@ -1,10 +1,11 @@
 import java.io.File
 import java.time.Duration
 import java.time.Instant
+import kotlin.system.measureNanoTime
 
 data class City(val id: Long)
 
-fun main() {
+fun main2() {
     val dataset = "dbbox_Latin-America"
     //val dataset = "K5_s30-0_n2d0_#0"
     val verticesFile = File("src/test/resources/$dataset.labels")
@@ -26,20 +27,20 @@ fun main() {
     println("${cities.size} vertices; ${edges.size} edges")
 
     val startNew = Instant.now()
-    val sg2 = Peeler(graph, 0.25)
+    val peeler = Peeler(graph, 0.25)
     repeat(10) {
-        sg2.peelNewSubGraph()
+        peeler.peelNewSubGraph()
     }
     println("Took ${Duration.between(startNew, Instant.now())}")
 
 
-    sg2.subGraphs.forEach { denseSubGraph ->
+    peeler.subGraphs.forEach { denseSubGraph ->
         val cities = denseSubGraph.vertices.map { idReassigner.getInitialVertex(it) }
         println("${denseSubGraph.size}: " + cities.sortedBy { it.id }.joinToString { it.id.toString() })
     }
 }
 
-fun main2() {
+fun main() {
     val dataset = "web-Google"
     //val dataset = "K5_s30-0_n2d0_#0"
     val edgesFile = File("src/test/resources/$dataset.txt")
@@ -62,13 +63,15 @@ fun main2() {
     val graph = Graph(max + 1, edges)
     println("${graph.size} vertices; ${edges.size} edges")
 
-    val k = 10
-    val subGraphs = Peeler(graph, 0.25)
+    val peeler = Peeler(graph, 0.25)
     repeat(10) {
-        subGraphs.peelNewSubGraph()
+        val took = measureNanoTime {
+            peeler.peelNewSubGraph()
+        }
+        println("Peeling #$it took ${took / 1000000.0}ms")
     }
 
-    subGraphs.subGraphs.forEach { sg ->
+    peeler.subGraphs.forEach { sg ->
         println("${sg.size}: " + sg.vertices.joinToString { it.toString() })
     }
 }
