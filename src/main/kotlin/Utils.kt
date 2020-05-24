@@ -4,19 +4,6 @@ inline fun <T> Collection<T>.forIf(condition: (T) -> Boolean, f: (T, index: Int)
     }
 }
 
-inline fun SubGraph.minVertexBy(f: (Vertex) -> Double): Vertex {
-    var min: Vertex? = null
-    var minVal = 0.0
-    forEachVertex { v ->
-        val score = f(v)
-        if (min == null || score < minVal) {
-            min = v
-            minVal = score
-        }
-    }
-    return min!!
-}
-
 inline fun <T> List<T>.sumByDoubleIndexed(f: (T, index: Int) -> Double): Double {
     var sum: Double = 0.0
     for (i in indices) {

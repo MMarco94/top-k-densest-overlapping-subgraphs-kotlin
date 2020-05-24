@@ -61,7 +61,9 @@ class SubGraph {
         this.size = size
     }
 
-    fun clone() = SubGraph(size, verticesMask.clone(), parent)
+    fun clone(): SubGraph {
+        return SubGraph(size, verticesMask.clone(), parent)
+    }
 
     operator fun contains(vertex: Vertex): Boolean {
         return verticesMask[vertex]

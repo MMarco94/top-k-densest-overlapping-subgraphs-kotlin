@@ -1,142 +1,98 @@
-import queues.SubGraphPriorityQueue
+import datastructure.VerticesLinkedList
+import datastructure.VerticesByDegreeQueue
 
-class Peeler(
-    val graph: Graph,
-    val currentResult: DOSResult,
-    val lambda: Double
-) {
-    val candidate = graph.toSubGraph()
+class Peeler(val graph: Graph, val lambda: Double, val distance: Distance = MetricDistance) {
 
-    private val subGraphs get() = currentResult.subGraphs
-    private var candidateEdges = graph.edges.size
-    val candidateDensity get() = candidateEdges.toDouble() / candidate.size
+    private val partitions = ArrayList<Partition>()
+    val subGraphs = ArrayList<SubGraph>()
+    private val nodes: Array<VerticesLinkedList.Node> = Array(graph.size) { VerticesLinkedList.Node(it) }
 
-    private val degrees = IntArray(graph.size) { graph.edgesMap[it].size }
-    private val intersectionSize = subGraphs.mapTo(ArrayList(subGraphs.size)) { it.size }
-
-    private var temporaryVertex: Vertex = -1
-    private var temporaryIsAdd = false
-
-    inner class PartitionInfo(
-        val key: PartitionKey,
-        val partition: SubGraph,
-        var weight: Double = -4 * lambda * subGraphs.indices.count { key.inSubGraph(it) }
-    ) {
-        val queue = SubGraphPriorityQueue(partition, degrees, candidate.verticesMask)
-        fun getWeight(vertex: Vertex): Double {
-            return weight + queue.getWeight(vertex)
+    init {
+        val vertices = VerticesByDegreeQueue(nodes)
+        nodes.forEach { n ->
+            n.resetDegree(graph)
+            vertices.add(n)
         }
+        val emptyPartition = Partition(emptySet(), vertices)
+        partitions.add(emptyPartition)
     }
 
-    private val partitionsInfo: List<PartitionInfo> = currentResult.partitions.map { (pk, subGraph) ->
-        PartitionInfo(pk, subGraph)
+    fun peelNewSubGraph(): SubGraph {
+        val candidate: SubGraph = graph.toSubGraph()
+        var candidateEdges = graph.edges.size
+        val intersections: MutableList<Int> = subGraphs.mapTo(ArrayList<Int>()) { it.size }
+
+        val partitionsForPeeling = partitions.map {
+            it.startNewPeeling()
+        }
+
+        var best: SubGraph = candidate.clone() //TODO: avoid cloning
+        var bestGain = marginalGain(candidateEdges, candidate, intersections)
+        do {
+            val worst = getWorst(partitionsForPeeling)
+            if (worst != null) {
+                candidateEdges -= worst.min().degree
+                val removed = removeWorst(candidate, partitionsForPeeling, intersections, worst)
+                check(removed.degree == 0)
+                val marginalGain = marginalGain(candidateEdges, candidate, intersections)
+                if (marginalGain >= bestGain) {
+                    best = candidate.clone() //TODO: avoid cloning
+                    bestGain = marginalGain
+                }
+                //TODO: do things if candidate in subGraphs
+            }
+        } while (worst != null)
+        check(candidateEdges == 0)
+
+        partitionsForPeeling.mapTo(partitions) { p ->
+            p.createPartition(best)
+        }
+        partitions.removeAll { it.vertices.isEmpty() }
+        nodes.forEach { it.resetDegree(graph) }
+
+        subGraphs.add(best)
+        return best
     }
 
-    fun getIntersectionSize(subGraphIndex: Int): Int {
-        return intersectionSize[subGraphIndex]
-    }
-
-    private fun checkNoTemporaryOperation() = check(temporaryVertex < 0)
-
-    fun removeWorstVertex() {
-        checkNoTemporaryOperation()
-        val minUsingPartitions = partitionsInfo.minBy { info ->
-            info.getWeight(info.queue.head())
-        }!!
-        remove(minUsingPartitions.queue.head())
-    }
-
-    fun removeTemporary(vertex: Vertex) {
-        checkNoTemporaryOperation()
-        temporaryVertex = vertex
-        temporaryIsAdd = false
-        remove(vertex, false)
-    }
-
-
-    fun addTemporary(vertex: Vertex) {
-        checkNoTemporaryOperation()
-        temporaryVertex = vertex
-        temporaryIsAdd = true
-        add(vertex, false)
-    }
-
-    fun restoreTemporary() {
-        check(temporaryVertex >= 0)
-        if (temporaryIsAdd) {
-            remove(temporaryVertex, false)
+    private fun marginalGain(candidateEdges: Int, candidate: SubGraph, intersections: MutableList<Int>): Double {
+        return if (candidate.size == 0) {
+            Double.MIN_VALUE
         } else {
-            add(temporaryVertex, false)
+            candidateEdges.toDouble() / candidate.size / 2 + lambda * subGraphs.sumByDoubleIndexed { g, index ->
+                distance(candidate, g, intersections[index])
+            }
         }
-        temporaryVertex = -1
     }
 
-    private fun remove(vertex: Vertex, updateQueue: Boolean = true) {
-        candidateEdges -= degrees[vertex]
-        editWeight(vertex, updateQueue) {
-            candidate.remove(vertex)
+    private fun removeWorst(candidate: SubGraph, partitionsForCandidate: List<PartitionForPeeling>, intersections: MutableList<Int>, worst: PartitionForPeeling): VerticesLinkedList.Node {
+        val removed = worst.removeMin()
+        candidate.remove(removed.vertex)
+        forEachConnectedVertex(candidate, removed.vertex) { connected, count ->
+            val node = nodes[connected]
+            node.changeDegree(node.degree - count)
         }
-        forEachConnectedVertex(vertex, updateQueue) { v, count ->
-            degrees[v] -= count
+        forEachSubGraphs(removed.vertex) { _, index ->
+            intersections[index]--
         }
-        forEachSubGraphs(vertex) { _, sgi ->
-            intersectionSize[sgi]--
-        }
-        updatePartitionsWeights { info ->
-            var newW = info.weight
-            forEachSubGraphs(vertex) { sg, index ->
-                if (info.key.inSubGraph(index)) {
-                    newW += 4 * lambda / sg.size
+        worst.oldPartition.vertices.add(removed)
+        partitionsForCandidate.forEach { p ->
+            p.oldPartition.partitionKey.forEach { sg ->
+                if (sg.contains(removed.vertex)) {
+                    p.peelWeight -= 4 * lambda / sg.size
                 }
             }
-            newW
         }
+        return removed
     }
 
-    private fun add(vertex: Vertex, updateQueue: Boolean = true) {
-        editWeight(vertex, updateQueue) {
-            candidate.add(vertex)
-        }
-        forEachConnectedVertex(vertex, updateQueue) { v, count ->
-            degrees[v] += count
-        }
-        candidateEdges += degrees[vertex]
-        forEachSubGraphs(vertex) { _, sgi ->
-            intersectionSize[sgi]++
-        }
-        updatePartitionsWeights { info ->
-            var newW = info.weight
-            forEachSubGraphs(vertex) { sg, index ->
-                if (info.key.inSubGraph(index)) {
-                    newW -= 4 * lambda / sg.size
-                }
-            }
-            newW
-        }
-    }
-
-    private inline fun updatePartitionsWeights(newWeightComputer: (PartitionInfo) -> Double) {
-        partitionsInfo.forEach {
-            it.weight = newWeightComputer(it)
-        }
-    }
-
-    private inline fun forEachConnectedVertex(vertex: Vertex, updateQueue: Boolean, f: (v: Vertex, count: Int) -> Unit) {
-        var vertexCount = 0
-        graph.edgesMap[vertex].forEach { e ->
-            val other = e.otherVertex(vertex)
-            if (other in candidate) {
-                editWeight(other, updateQueue) {
-                    f(other, 1)
-                }
-                vertexCount++
+    private fun getWorst(partitionsForCandidate: List<PartitionForPeeling>): PartitionForPeeling? {
+        var min: PartitionForPeeling? = null
+        for (p in partitionsForCandidate) {
+            if (p.isNotEmpty() && (min == null || p.minWeight() < min.minWeight())) {
+                min = p
             }
         }
-        if (vertexCount > 0) {
-            editWeight(vertex, updateQueue) {
-                f(vertex, vertexCount)
-            }
-        }
+        return min
     }
 
     private inline fun forEachSubGraphs(vertex: Vertex, sg: (SubGraph, subGraphIndex: Int) -> Unit) {
@@ -145,12 +101,59 @@ class Peeler(
         }
     }
 
-    private inline fun editWeight(v: Vertex, updateQueue: Boolean, f: () -> Unit) {
-        f()
-        if (updateQueue) {
-            partitionsInfo.forEach {
-                it.queue.notifyVertexWeightChanged(v)
+    private inline fun forEachConnectedVertex(candidate: SubGraph, vertex: Vertex, f: (connected: Vertex, count: Int) -> Unit) {
+        var vertexCount = 0
+        graph.edgesMap[vertex].forEach { e ->
+            val other = e.otherVertex(vertex)
+            if (other in candidate) {
+                f(other, 1)
+                vertexCount++
             }
+        }
+        if (vertexCount > 0) {
+            f(vertex, vertexCount)
+        }
+    }
+
+    private inner class Partition(
+        val partitionKey: Set<SubGraph>,
+        var vertices: VerticesByDegreeQueue
+    ) {
+
+        fun startNewPeeling(): PartitionForPeeling {
+            return PartitionForPeeling(
+                this
+            )
+        }
+    }
+
+    private inner class PartitionForPeeling(
+        val oldPartition: Partition
+    ) {
+        val verticesByDegree = oldPartition.vertices
+        var peelWeight: Double = -4 * lambda * oldPartition.partitionKey.size
+
+        init {
+            oldPartition.vertices = VerticesByDegreeQueue(nodes)
+        }
+
+        fun isEmpty() = verticesByDegree.isEmpty()
+        fun isNotEmpty() = verticesByDegree.isNotEmpty()
+        fun minWeight() = peelWeight + verticesByDegree.min().degree
+        fun min() = verticesByDegree.min()
+        fun removeMin() = verticesByDegree.removeMin()
+
+        fun createPartition(best: SubGraph): Partition {
+            check(verticesByDegree.isEmpty())
+            best.forEachVertex { v ->
+                val node = nodes[v]
+                if (node.queue == oldPartition.vertices) {
+                    node.remove()
+                    node.resetDegree(graph)
+                    verticesByDegree.add(node)
+                }
+            }
+            return Partition(oldPartition.partitionKey.plus(best), verticesByDegree)
         }
     }
 }

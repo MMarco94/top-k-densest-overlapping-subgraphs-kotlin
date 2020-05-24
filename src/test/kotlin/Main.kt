@@ -4,7 +4,7 @@ import java.time.Instant
 
 data class City(val id: Long)
 
-fun mainWithtranslator() {
+fun main() {
     val dataset = "dbbox_Latin-America"
     //val dataset = "K5_s30-0_n2d0_#0"
     val verticesFile = File("src/test/resources/$dataset.labels")
@@ -25,18 +25,21 @@ fun mainWithtranslator() {
 
     println("${cities.size} vertices; ${edges.size} edges")
 
-    val start = Instant.now()
-    val subGraphs = DOS(graph, 0.25).getDenseOverlappingSubGraphs().elementAt(10)
-    val took = Duration.between(start, Instant.now())
-    println("Creating sub-graphs took $took")
+    val startNew = Instant.now()
+    val sg2 = Peeler(graph, 0.25)
+    repeat(10) {
+        sg2.peelNewSubGraph()
+    }
+    println("Took ${Duration.between(startNew, Instant.now())}")
 
-    subGraphs.subGraphs.forEach { denseSubGraph ->
+
+    sg2.subGraphs.forEach { denseSubGraph ->
         val cities = denseSubGraph.vertices.map { idReassigner.getInitialVertex(it) }
         println("${denseSubGraph.size}: " + cities.sortedBy { it.id }.joinToString { it.id.toString() })
     }
 }
 
-fun main() {
+fun main2() {
     val dataset = "web-Google"
     //val dataset = "K5_s30-0_n2d0_#0"
     val edgesFile = File("src/test/resources/$dataset.txt")
@@ -60,11 +63,12 @@ fun main() {
     println("${graph.size} vertices; ${edges.size} edges")
 
     val k = 10
-    val subGraphs = DOS(graph, 0.25).getDenseOverlappingSubGraphs().drop(1).take(k)
+    val subGraphs = Peeler(graph, 0.25)
+    repeat(10) {
+        subGraphs.peelNewSubGraph()
+    }
 
-    subGraphs.forEach {
-        val denseSubGraph = it.subGraphs.last()
-        val nodes = denseSubGraph.vertices
-        println("${denseSubGraph.size}: " + nodes.joinToString { it.toString() })
+    subGraphs.subGraphs.forEach { sg ->
+        println("${sg.size}: " + sg.vertices.joinToString { it.toString() })
     }
 }
