@@ -18,6 +18,7 @@ class Graph(val size: Int, val edges: Set<Edge>) {
             arr[e.b].add(e)
         }
     }
+    val maxDegree = edgesMap.maxBy { it.size }?.size ?: 0
     val allWedges = sequence {
         edgesMap.forEachIndexed { v1, edges ->
             edges.forEach { e1 ->

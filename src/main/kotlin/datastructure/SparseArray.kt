@@ -2,37 +2,23 @@ package datastructure
 
 
 /**
- * Implementation of Map that accepts positive integers has keys.
- * Keys less than [smallKeysLimit] have an access time O(1)
+ * Implementation of Map that accepts as keys non-negative integers less than limit.
  */
-class SparseArray<T : Any>(val smallKeysLimit: Int) {
+class SparseArray<T : Any>(limit: Int) {
 
     @Suppress("UNCHECKED_CAST")
-    private val smallValues = arrayOfNulls<Any>(smallKeysLimit) as Array<T?>
-    private val largeValues = HashMap<Int, T>()
+    private val smallValues = arrayOfNulls<Any>(limit + 1) as Array<T?>
 
     fun get(key: Int): T? {
-        return if (key < smallKeysLimit) {
-            smallValues[key]
-        } else {
-            largeValues[key]
-        }
+        return smallValues[key]
     }
 
     fun put(key: Int, value: T) {
-        if (key < smallKeysLimit) {
-            smallValues[key] = value
-        } else {
-            largeValues[key] = value
-        }
+        smallValues[key] = value
     }
 
     fun remove(key: Int) {
-        if (key < smallKeysLimit) {
-            smallValues[key] = null
-        } else {
-            largeValues.remove(key)
-        }
+        smallValues[key] = null
     }
 
     inline fun getOrPut(key: Int, defaultValue: () -> T): T {

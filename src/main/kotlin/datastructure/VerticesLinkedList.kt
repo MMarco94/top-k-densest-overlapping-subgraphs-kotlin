@@ -34,7 +34,7 @@ class VerticesLinkedList {
 
             p?.next = n
             n?.prev = p
-            if (l.head == this) {
+            if (l.head === this) {
                 l.head = n
             }
 

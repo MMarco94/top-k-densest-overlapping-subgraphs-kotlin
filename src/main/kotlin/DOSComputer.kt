@@ -11,7 +11,7 @@ class DOSComputer(val graph: Graph, val lambda: Double, val distance: Distance =
     private val nodes: Array<VerticesLinkedList.Node> = Array(graph.size) { VerticesLinkedList.Node(it) }
 
     init {
-        val vertices = VerticesByDegreeQueue(graph.size)
+        val vertices = VerticesByDegreeQueue(graph.maxDegree)
         nodes.forEach { n ->
             n.resetDegree(graph)
             vertices.add(n)
@@ -180,7 +180,7 @@ class DOSComputer(val graph: Graph, val lambda: Double, val distance: Distance =
             var peelWeight: Double = -4 * lambda * oldPartition.partitionKey.size
 
             init {
-                oldPartition.vertices = VerticesByDegreeQueue(graph.size)
+                oldPartition.vertices = VerticesByDegreeQueue(graph.maxDegree)
             }
 
             fun isEmpty() = verticesByDegree.isEmpty()
