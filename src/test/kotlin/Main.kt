@@ -26,12 +26,12 @@ fun main2() {
 
     println("${cities.size} vertices; ${edges.size} edges")
 
-    val startNew = Instant.now()
+    val start = Instant.now()
     val peeler = Peeler(graph, 0.25)
     repeat(10) {
         peeler.peelNewSubGraph()
     }
-    println("Took ${Duration.between(startNew, Instant.now())}")
+    println("Took ${Duration.between(start, Instant.now())}")
 
 
     peeler.subGraphs.forEach { denseSubGraph ->
@@ -63,6 +63,7 @@ fun main() {
     val graph = Graph(max + 1, edges)
     println("${graph.size} vertices; ${edges.size} edges")
 
+    val start = Instant.now()
     val peeler = Peeler(graph, 0.25)
     repeat(10) {
         val took = measureNanoTime {
@@ -70,6 +71,7 @@ fun main() {
         }
         println("Peeling #$it took ${took / 1000000.0}ms")
     }
+    println("Took ${Duration.between(start, Instant.now())}")
 
     peeler.subGraphs.forEach { sg ->
         println("${sg.size}: " + sg.vertices.joinToString { it.toString() })

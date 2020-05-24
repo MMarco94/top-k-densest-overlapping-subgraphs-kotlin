@@ -28,16 +28,18 @@ class VerticesLinkedList {
     ) {
 
         fun remove() {
-            check(list != null)
+            val l = list!!
             val p = prev
             val n = next
+
             p?.next = n
             n?.prev = p
+            if (l.head == this) {
+                l.head = n
+            }
+
             prev = null
             next = null
-            if (list?.head == this) {
-                list?.head = n
-            }
             list = null
             queue = null
         }

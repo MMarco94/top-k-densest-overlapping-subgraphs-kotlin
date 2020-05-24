@@ -1,8 +1,9 @@
 package datastructure
 
 import java.util.*
+import kotlin.math.sqrt
 
-class VerticesByDegreeQueue(private val nodes: Array<VerticesLinkedList.Node>) {
+class VerticesByDegreeQueue(graphSize: Int) {
     private class DegreeBucket(val degree: Int) : Comparable<DegreeBucket> {
 
         val vertices = VerticesLinkedList()
@@ -13,7 +14,7 @@ class VerticesByDegreeQueue(private val nodes: Array<VerticesLinkedList.Node>) {
     }
 
     private val queue = PriorityQueue<DegreeBucket>()
-    private val buckets = SparseArray<DegreeBucket>()
+    private val buckets = SparseArray<DegreeBucket>(sqrt(graphSize.toFloat()).toInt().coerceAtLeast(50))
 
     fun add(node: VerticesLinkedList.Node) {
         val degree = node.degree
@@ -38,9 +39,7 @@ class VerticesByDegreeQueue(private val nodes: Array<VerticesLinkedList.Node>) {
     }
 
     fun removeMin(): VerticesLinkedList.Node {
-        return firstNonEmptyBucket()!!.vertices.first().also { node ->
-            node.remove()
-        }
+        return firstNonEmptyBucket()!!.vertices.removeFirst()
     }
 
     private fun firstNonEmptyBucket(): DegreeBucket? {

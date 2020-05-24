@@ -8,7 +8,7 @@ class Peeler(val graph: Graph, val lambda: Double, val distance: Distance = Metr
     private val nodes: Array<VerticesLinkedList.Node> = Array(graph.size) { VerticesLinkedList.Node(it) }
 
     init {
-        val vertices = VerticesByDegreeQueue(nodes)
+        val vertices = VerticesByDegreeQueue(graph.size)
         nodes.forEach { n ->
             n.resetDegree(graph)
             vertices.add(n)
@@ -136,7 +136,7 @@ class Peeler(val graph: Graph, val lambda: Double, val distance: Distance = Metr
         var peelWeight: Double = -4 * lambda * oldPartition.partitionKey.size
 
         init {
-            oldPartition.vertices = VerticesByDegreeQueue(nodes)
+            oldPartition.vertices = VerticesByDegreeQueue(graph.size)
         }
 
         fun isEmpty() = verticesByDegree.isEmpty()
