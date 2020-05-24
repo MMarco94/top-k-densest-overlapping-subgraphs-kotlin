@@ -27,14 +27,14 @@ fun main2() {
     println("${cities.size} vertices; ${edges.size} edges")
 
     val start = Instant.now()
-    val peeler = Peeler(graph, 0.25)
+    val peeler = DOSComputer(graph, 0.25)
     repeat(10) {
-        peeler.peelNewSubGraph()
+        peeler.peel()
     }
     println("Took ${Duration.between(start, Instant.now())}")
 
 
-    peeler.subGraphs.forEach { denseSubGraph ->
+    peeler.subGraphs().forEach { denseSubGraph ->
         val cities = denseSubGraph.vertices.map { idReassigner.getInitialVertex(it) }
         println("${denseSubGraph.size}: " + cities.sortedBy { it.id }.joinToString { it.id.toString() })
     }
@@ -64,16 +64,16 @@ fun main() {
     println("${graph.size} vertices; ${edges.size} edges")
 
     val start = Instant.now()
-    val peeler = Peeler(graph, 0.25)
+    val peeler = DOSComputer(graph, 0.25)
     repeat(10) {
         val took = measureNanoTime {
-            peeler.peelNewSubGraph()
+            peeler.peel()
         }
         println("Peeling #$it took ${took / 1000000.0}ms")
     }
     println("Took ${Duration.between(start, Instant.now())}")
 
-    peeler.subGraphs.forEach { sg ->
+    peeler.subGraphs().forEach { sg ->
         println("${sg.size}: " + sg.vertices.joinToString { it.toString() })
     }
 }
