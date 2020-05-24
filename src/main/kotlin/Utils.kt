@@ -1,5 +1,5 @@
-inline fun <T> Collection<T>.forIf(condition: (T) -> Boolean, f: (T, index: Int) -> Unit) {
-    forEachIndexed { index, t ->
+inline fun <T> List<T>.forIf(condition: (T) -> Boolean, f: (T, index: Int) -> Unit) {
+    noIteratorForEachIndexed { index, t ->
         if (condition(t)) f(t, index)
     }
 }
@@ -7,6 +7,12 @@ inline fun <T> Collection<T>.forIf(condition: (T) -> Boolean, f: (T, index: Int)
 inline fun <T> List<T>.noIteratorForEach(f: (T) -> Unit) {
     for(i in indices){
         f(get(i))
+    }
+}
+
+inline fun <T> List<T>.noIteratorForEachIndexed(f: (Int, T) -> Unit) {
+    for(i in indices){
+        f(i, get(i))
     }
 }
 

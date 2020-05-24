@@ -75,10 +75,10 @@ class Peeler(val graph: Graph, val lambda: Double, val distance: Distance = Metr
             intersections[index]--
         }
         worst.oldPartition.vertices.add(removed)
-        partitionsForCandidate.forEach { p ->
+        partitionsForCandidate.noIteratorForEach { p ->
             p.oldPartition.partitionKey.noIteratorForEach { sg ->
                 if (sg.contains(removed.vertex)) {
-                    p.peelWeight -= 4 * lambda / sg.size
+                    p.peelWeight += 4 * lambda / sg.size
                 }
             }
         }
