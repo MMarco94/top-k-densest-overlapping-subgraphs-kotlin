@@ -61,10 +61,6 @@ class SubGraph {
         this.size = size
     }
 
-    fun clone(): SubGraph {
-        return SubGraph(size, verticesMask.clone(), parent)
-    }
-
     operator fun contains(vertex: Vertex): Boolean {
         return verticesMask[vertex]
     }
@@ -88,4 +84,41 @@ class SubGraph {
     override fun toString(): String {
         return vertices.joinToString { it.toString() }
     }
+}
+
+class SnapshottableSubGraph(
+    private val subGraph: SubGraph
+) {
+    val size: Int get() = subGraph.size
+    private val removals = mutableListOf<Vertex>()
+
+    init {
+        check(subGraph.size == subGraph.parent.size)
+    }
+
+    operator fun contains(vertex: Vertex): Boolean {
+        return subGraph.contains(vertex)
+    }
+
+    fun remove(vertex: Vertex) {
+        removals.add(vertex)
+        subGraph.remove(vertex)
+    }
+
+    fun snapshot(): GraphSnapshot {
+        return GraphSnapshot(removals.size)
+    }
+
+    inner class GraphSnapshot(
+        private val removalCount: Int
+    ) {
+        fun toSubGraph(): SubGraph {
+            return subGraph.parent.toSubGraph().also { sg ->
+                for (i in 0 until removalCount) {
+                    sg.remove(removals[i])
+                }
+            }
+        }
+    }
+
 }

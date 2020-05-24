@@ -18,7 +18,7 @@ class Peeler(val graph: Graph, val lambda: Double, val distance: Distance = Metr
     }
 
     fun peelNewSubGraph(): SubGraph {
-        val candidate: SubGraph = graph.toSubGraph()
+        val candidate = SnapshottableSubGraph(graph.toSubGraph())
         var candidateEdges = graph.edges.size
         val intersections: MutableList<Int> = subGraphs.mapTo(ArrayList<Int>()) { it.size }
 
@@ -26,7 +26,7 @@ class Peeler(val graph: Graph, val lambda: Double, val distance: Distance = Metr
             it.startNewPeeling()
         }
 
-        var best: SubGraph = candidate.clone() //TODO: avoid cloning
+        var best: SnapshottableSubGraph.GraphSnapshot = candidate.snapshot()
         var bestGain = marginalGain(candidateEdges, candidate, intersections)
         do {
             val worst = getWorst(partitionsForPeeling)
@@ -36,7 +36,7 @@ class Peeler(val graph: Graph, val lambda: Double, val distance: Distance = Metr
                 check(removed.degree == 0)
                 val marginalGain = marginalGain(candidateEdges, candidate, intersections)
                 if (marginalGain >= bestGain) {
-                    best = candidate.clone() //TODO: avoid cloning
+                    best = candidate.snapshot()
                     bestGain = marginalGain
                 }
                 //TODO: do things if candidate in subGraphs
@@ -44,27 +44,29 @@ class Peeler(val graph: Graph, val lambda: Double, val distance: Distance = Metr
         } while (worst != null)
         check(candidateEdges == 0)
 
+        val bestSubGraph = best.toSubGraph()
+
         partitionsForPeeling.mapTo(partitions) { p ->
-            p.createPartition(best)
+            p.createPartition(bestSubGraph)
         }
         partitions.removeAll { it.vertices.isEmpty() }
         nodes.forEach { it.resetDegree(graph) }
 
-        subGraphs.add(best)
-        return best
+        subGraphs.add(bestSubGraph)
+        return bestSubGraph
     }
 
-    private fun marginalGain(candidateEdges: Int, candidate: SubGraph, intersections: MutableList<Int>): Double {
+    private fun marginalGain(candidateEdges: Int, candidate: SnapshottableSubGraph, intersections: MutableList<Int>): Double {
         return if (candidate.size == 0) {
             Double.MIN_VALUE
         } else {
             candidateEdges.toDouble() / candidate.size / 2 + lambda * subGraphs.sumByDoubleIndexed { g, index ->
-                distance(candidate, g, intersections[index])
+                distance(candidate.size, g.size, intersections[index])
             }
         }
     }
 
-    private fun removeWorst(candidate: SubGraph, partitionsForCandidate: List<PartitionForPeeling>, intersections: MutableList<Int>, worst: PartitionForPeeling): VerticesLinkedList.Node {
+    private fun removeWorst(candidate: SnapshottableSubGraph, partitionsForCandidate: List<PartitionForPeeling>, intersections: MutableList<Int>, worst: PartitionForPeeling): VerticesLinkedList.Node {
         val removed = worst.removeMin()
         candidate.remove(removed.vertex)
         forEachConnectedVertex(candidate, removed.vertex) { connected, count ->
@@ -101,7 +103,7 @@ class Peeler(val graph: Graph, val lambda: Double, val distance: Distance = Metr
         }
     }
 
-    private inline fun forEachConnectedVertex(candidate: SubGraph, vertex: Vertex, f: (connected: Vertex, count: Int) -> Unit) {
+    private inline fun forEachConnectedVertex(candidate: SnapshottableSubGraph, vertex: Vertex, f: (connected: Vertex, count: Int) -> Unit) {
         var vertexCount = 0
         graph.edgesMap[vertex].noIteratorForEach { e ->
             val other = e.otherVertex(vertex)
