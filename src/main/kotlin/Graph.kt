@@ -1,30 +1,20 @@
 typealias Vertex = Int
 
-data class Edge(val a: Vertex, val b: Vertex) {
-    fun otherVertex(v: Vertex): Vertex {
-        return when (v) {
-            a -> b
-            b -> a
-            else -> throw IllegalArgumentException()
-        }
-    }
-}
+data class Edge(val a: Vertex, val b: Vertex)
 
 class Graph(val size: Int, val edges: Set<Edge>) {
     val vertices = (0 until size).asSequence()
-    val edgesMap: List<List<Edge>> = List(size) { mutableListOf<Edge>() }.also { arr ->
+    val connectionsMap: List<List<Vertex>> = List(size) { mutableListOf<Vertex>() }.also { arr ->
         edges.forEach { e ->
-            arr[e.a].add(e)
-            arr[e.b].add(e)
+            arr[e.a].add(e.b)
+            arr[e.b].add(e.a)
         }
     }
-    val maxDegree = edgesMap.maxBy { it.size }?.size ?: 0
+    val maxDegree = connectionsMap.maxBy { it.size }?.size ?: 0
     val allWedges = sequence {
-        edgesMap.forEachIndexed { v1, edges ->
-            edges.forEach { e1 ->
-                val v2 = e1.otherVertex(v1)
-                edgesMap[v2].forEach { e2 ->
-                    val v3 = e2.otherVertex(v2)
+        connectionsMap.forEachIndexed { v1, edges ->
+            edges.forEach { v2 ->
+                connectionsMap[v2].forEach { v3 ->
                     if (v3 != v1) {
                         yield(setOf(v1, v2, v3))
                     }
@@ -78,6 +68,7 @@ class SubGraph {
         size++
     }
 
+    override fun hashCode() = throw UnsupportedOperationException()
     override fun equals(other: Any?): Boolean {
         return other is SubGraph && other.parent == parent && other.size == size && other.verticesMask.contentEquals(verticesMask)
     }
@@ -109,6 +100,9 @@ class SnapshottableSubGraph(
     fun snapshot(): GraphSnapshot {
         return GraphSnapshot(removals.size)
     }
+
+    override fun hashCode() = throw UnsupportedOperationException()
+    override fun equals(other: Any?) = throw UnsupportedOperationException()
 
     inner class GraphSnapshot(
         private val removalCount: Int

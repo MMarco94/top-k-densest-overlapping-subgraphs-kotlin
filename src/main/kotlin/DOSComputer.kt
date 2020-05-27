@@ -154,8 +154,7 @@ class DOSComputer(val graph: Graph, val lambda: Double, val distance: Distance =
          * Executes [f] for each [Vertex] that is connected to [vertex], considering only the edges in [candidate]
          */
         private inline fun forEachConnectedVertex(vertex: Vertex, f: (connected: Vertex) -> Unit) {
-            graph.edgesMap[vertex].noIteratorForEach { e ->
-                val other = e.otherVertex(vertex)
+            graph.connectionsMap[vertex].noIteratorForEach { other ->
                 if (other in candidate) {
                     f(other)
                 }

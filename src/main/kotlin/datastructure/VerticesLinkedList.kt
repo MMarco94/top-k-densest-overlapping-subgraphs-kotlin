@@ -34,19 +34,23 @@ class VerticesLinkedList {
 
         fun remove() {
             val l = list!!
+            //Saving this variable since the compiler cannot know that
+            //changing the order of this instruction is side effect free
+            val isHead = l.head === this
             val p = prev
             val n = next
 
             p?.next = n
             n?.prev = p
-            if (l.head === this) {
-                l.head = n
-            }
 
             prev = null
             next = null
             list = null
             queue = null
+
+            if (isHead) {
+                l.head = n
+            }
         }
 
         fun add(queue: VerticesByDegreeQueue, list: VerticesLinkedList) {
@@ -63,7 +67,7 @@ class VerticesLinkedList {
         }
 
         fun resetDegree(graph: Graph) {
-            changeDegree(graph.edgesMap[vertex].size)
+            changeDegree(graph.connectionsMap[vertex].size)
         }
 
         fun changeDegree(newDegree: Int) {
