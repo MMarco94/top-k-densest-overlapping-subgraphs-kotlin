@@ -9,13 +9,6 @@ class VerticesLinkedList {
 
     fun isEmpty() = head == null
 
-    fun removeFirst(): Node {
-        val ret = head
-        check(ret != null)
-        ret.remove()
-        return ret
-    }
-
     fun first(): Node = head!!
 
     fun min(): Node {

@@ -52,7 +52,9 @@ class VerticesByDegreeQueue(maxDegree: Int) {
     }
 
     fun min(): VerticesLinkedList.Node {
-        val firstNonEmptyBucket = firstNonEmptyBucket()
+        //Can call peek since if someone calls this method it means
+        //that it checked for isEmpty, so the queue will already be organized
+        val firstNonEmptyBucket = queue.peek()
         return if (firstNonEmptyBucket == null) {
             FULL_SCAN_WAS_NECESSARY++
             otherNodes.min()
@@ -92,7 +94,7 @@ class VerticesByDegreeQueue(maxDegree: Int) {
             val new = getListForDegree(newDegree)
             if (old != new) {
                 node.remove()
-                add(node)
+                node.add(this, new)
             }
         }
     }

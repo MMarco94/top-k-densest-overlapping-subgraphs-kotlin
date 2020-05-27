@@ -68,8 +68,7 @@ class DOSComputer(val graph: Graph, val lambda: Double, val distance: Distance =
                 val worst = getMinimum(partitionsForPeeling)
                 if (worst != null) {
                     candidateEdges -= worst.min().degree
-                    val removed = remove(worst)
-                    check(removed.degree == 0)
+                    remove(worst)
                     val marginalGain = marginalGain()
                     if (marginalGain >= bestGain) {
                         best = candidate.snapshot()
@@ -121,17 +120,18 @@ class DOSComputer(val graph: Graph, val lambda: Double, val distance: Distance =
         /**
          * Removes [minimum] from [candidate]. Also updates all the variables to keep things consistent
          */
-        private fun remove(minimum: PartitionForPeeling): VerticesLinkedList.Node {
+        private fun remove(minimum: PartitionForPeeling) {
             val removed = minimum.removeMin()
-            forEachConnectedVertex(removed.vertex) { connected, count ->
+            forEachConnectedVertex(removed.vertex) { connected ->
                 val node = nodes[connected]
-                node.changeDegree(node.degree - count)
+                node.changeDegree(node.degree - 1)
             }
+            removed.changeDegree(0)
+            minimum.oldPartition.vertices.add(removed)
             candidate.remove(removed.vertex)
             forEachSubGraphs(removed.vertex) { _, index ->
                 intersections[index]--
             }
-            minimum.oldPartition.vertices.add(removed)
             partitionsForPeeling.noIteratorForEach { p ->
                 p.oldPartition.partitionKey.noIteratorForEach { sg ->
                     if (sg.contains(removed.vertex)) {
@@ -139,7 +139,6 @@ class DOSComputer(val graph: Graph, val lambda: Double, val distance: Distance =
                     }
                 }
             }
-            return removed
         }
 
         /**
@@ -154,17 +153,12 @@ class DOSComputer(val graph: Graph, val lambda: Double, val distance: Distance =
         /**
          * Executes [f] for each [Vertex] that is connected to [vertex], considering only the edges in [candidate]
          */
-        private inline fun forEachConnectedVertex(vertex: Vertex, f: (connected: Vertex, count: Int) -> Unit) {
-            var vertexCount = 0
+        private inline fun forEachConnectedVertex(vertex: Vertex, f: (connected: Vertex) -> Unit) {
             graph.edgesMap[vertex].noIteratorForEach { e ->
                 val other = e.otherVertex(vertex)
                 if (other in candidate) {
-                    f(other, 1)
-                    vertexCount++
+                    f(other)
                 }
-            }
-            if (vertexCount > 0) {
-                f(vertex, vertexCount)
             }
         }
 
