@@ -70,7 +70,7 @@ class VerticesLinkedList {
          * Alternative to calling [remove] and [add].
          * This is slightly (but measurably) faster than doing so.
          */
-        fun move(list: VerticesLinkedList) {
+        fun move(newList: VerticesLinkedList) {
             val oldL = this.list!!
             val oldN = next
 
@@ -84,11 +84,11 @@ class VerticesLinkedList {
                 prev = null
             }
 
-            val newHead = list.head
+            val newHead = newList.head
             next = newHead
             newHead?.prev = this
-            list.head = this
-            this.list = list
+            newList.head = this
+            this.list = newList
         }
 
         fun resetDegree(graph: Graph) {
@@ -100,7 +100,7 @@ class VerticesLinkedList {
             if (newDegree != oldDegree) {
                 check(newDegree >= 0)
                 degree = newDegree
-                queue?.changeDegree(this, oldDegree, newDegree)
+                queue?.changeDegree(this, newDegree)
             }
         }
     }

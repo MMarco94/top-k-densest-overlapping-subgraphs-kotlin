@@ -81,22 +81,10 @@ class VerticesByDegreeQueue(maxDegree: Int) {
         }
     }
 
-    fun changeDegree(node: VerticesLinkedList.Node, oldDegree: Int, newDegree: Int) {
-        if (oldDegree < DEGREE_THRESHOLD && newDegree < DEGREE_THRESHOLD && newDegree == oldDegree - 1 && node.next == null && node.prev == null && !buckets.contains(newDegree)) {
-            //Optimizing the case in which the degree decreases by 1
-            //I can change the bucket instead of removing/adding the node.
-            //In this case, the priority queue doesn't need to be updated, since the position in the heap will remain the same
-            val oldBucket = buckets.get(oldDegree)!!
-            buckets.remove(oldDegree)
-            oldBucket.degree = newDegree
-            buckets.put(newDegree, oldBucket)
-            BUCKET_OPTIMIZED++
-        } else {
-            val old = node.list!!
-            val new = getListForDegree(newDegree)
-            if (old != new) {
-                node.move(new)
-            }
+    fun changeDegree(node: VerticesLinkedList.Node, newDegree: Int) {
+        val new = getListForDegree(newDegree)
+        if (node.list != new) {
+            node.move(new)
         }
     }
 }
