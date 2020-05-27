@@ -1,4 +1,3 @@
-import datastructure.BUCKET_OPTIMIZED
 import datastructure.FULL_SCAN_WAS_NECESSARY
 import java.io.File
 import java.time.Duration
@@ -52,9 +51,8 @@ fun main() {
         val took = measureNanoTime {
             peeler.peel()
         }
-        println("Peeling #$it took ${took / 1000000.0}ms (full node scans = $FULL_SCAN_WAS_NECESSARY; bucket optimized=$BUCKET_OPTIMIZED)")
+        println("Peeling #$it took ${took / 1000000.0}ms (full node scans = $FULL_SCAN_WAS_NECESSARY)")
         FULL_SCAN_WAS_NECESSARY = 0
-        BUCKET_OPTIMIZED = 0
     }
     println("Took ${Duration.between(start, Instant.now())}")
 

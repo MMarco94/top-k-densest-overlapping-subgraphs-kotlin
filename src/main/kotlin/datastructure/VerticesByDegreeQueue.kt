@@ -6,7 +6,6 @@ import kotlin.math.min
 private const val DEGREE_THRESHOLD = 100
 
 var FULL_SCAN_WAS_NECESSARY = 0
-var BUCKET_OPTIMIZED = 0
 
 class VerticesByDegreeQueue(maxDegree: Int) {
     private class DegreeBucket(var degree: Int) : Comparable<DegreeBucket> {
