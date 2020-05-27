@@ -18,6 +18,18 @@ class VerticesLinkedList {
 
     fun first(): Node = head!!
 
+    fun min(): Node {
+        var ret = head!!
+        var iter = ret.next
+        while (iter != null) {
+            if (iter.degree < ret.degree) {
+                ret = iter
+            }
+            iter = iter.next
+        }
+        return ret
+    }
+
     class Node(
         var vertex: Vertex,
         var prev: Node? = null,

@@ -1,3 +1,5 @@
+import datastructure.BUCKET_OPTIMIZED
+import datastructure.FULL_SCAN_WAS_NECESSARY
 import java.io.File
 import java.time.Duration
 import java.time.Instant
@@ -45,12 +47,14 @@ fun main() {
     println("${graph.size} vertices; ${graph.edges.size} edges; maxDegree is ${graph.maxDegree}")
 
     val start = Instant.now()
-    val peeler = DOSComputer(graph, 0.25)
+    val peeler = DOSComputer(graph, 5.0)
     repeat(10) {
         val took = measureNanoTime {
             peeler.peel()
         }
-        println("Peeling #$it took ${took / 1000000.0}ms")
+        println("Peeling #$it took ${took / 1000000.0}ms (full node scans = $FULL_SCAN_WAS_NECESSARY; bucket optimized=$BUCKET_OPTIMIZED)")
+        FULL_SCAN_WAS_NECESSARY = 0
+        BUCKET_OPTIMIZED = 0
     }
     println("Took ${Duration.between(start, Instant.now())}")
 

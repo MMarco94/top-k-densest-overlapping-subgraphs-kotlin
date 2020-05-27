@@ -1,6 +1,12 @@
 package datastructure
 
 import java.util.*
+import kotlin.math.min
+
+private const val DEGREE_THRESHOLD = 100
+
+var FULL_SCAN_WAS_NECESSARY = 0
+var BUCKET_OPTIMIZED = 0
 
 class VerticesByDegreeQueue(maxDegree: Int) {
     private class DegreeBucket(var degree: Int) : Comparable<DegreeBucket> {
@@ -13,12 +19,20 @@ class VerticesByDegreeQueue(maxDegree: Int) {
     }
 
     private val queue = PriorityQueue<DegreeBucket>()
-    private val buckets = SparseArray<DegreeBucket>(maxDegree)
+    private val buckets = SparseArray<DegreeBucket>(min(maxDegree, DEGREE_THRESHOLD))
+    private val otherNodes = VerticesLinkedList()
 
     fun add(node: VerticesLinkedList.Node) {
-        val degree = node.degree
-        val bucket = getOrCreateBucket(degree)
-        node.add(this, bucket.vertices)
+        node.add(this, getListForDegree(node.degree))
+    }
+
+    private fun getListForDegree(degree: Int): VerticesLinkedList {
+        return if (degree < DEGREE_THRESHOLD) {
+            val bucket = getOrCreateBucket(degree)
+            bucket.vertices
+        } else {
+            otherNodes
+        }
     }
 
     private fun getOrCreateBucket(degree: Int): DegreeBucket {
@@ -30,7 +44,7 @@ class VerticesByDegreeQueue(maxDegree: Int) {
     }
 
     fun isEmpty(): Boolean {
-        return firstNonEmptyBucket() == null
+        return firstNonEmptyBucket() == null && otherNodes.isEmpty()
     }
 
     fun isNotEmpty(): Boolean {
@@ -38,11 +52,17 @@ class VerticesByDegreeQueue(maxDegree: Int) {
     }
 
     fun min(): VerticesLinkedList.Node {
-        return firstNonEmptyBucket()!!.vertices.first()
+        val firstNonEmptyBucket = firstNonEmptyBucket()
+        return if (firstNonEmptyBucket == null) {
+            FULL_SCAN_WAS_NECESSARY++
+            otherNodes.min()
+        } else {
+            firstNonEmptyBucket.vertices.first()
+        }
     }
 
     fun removeMin(): VerticesLinkedList.Node {
-        return firstNonEmptyBucket()!!.vertices.removeFirst()
+        return min().also { it.remove() }
     }
 
     private fun firstNonEmptyBucket(): DegreeBucket? {
@@ -58,17 +78,22 @@ class VerticesByDegreeQueue(maxDegree: Int) {
     }
 
     fun changeDegree(node: VerticesLinkedList.Node, oldDegree: Int, newDegree: Int) {
-        if (newDegree == oldDegree - 1 && node.next == null && node.prev == null && !buckets.contains(newDegree)) {
-            //Optimizing the case in which the degree decreases by 1: most of the times
+        if (oldDegree < DEGREE_THRESHOLD && newDegree < DEGREE_THRESHOLD && newDegree == oldDegree - 1 && node.next == null && node.prev == null && !buckets.contains(newDegree)) {
+            //Optimizing the case in which the degree decreases by 1
             //I can change the bucket instead of removing/adding the node.
             //In this case, the priority queue doesn't need to be updated, since the position in the heap will remain the same
             val oldBucket = buckets.get(oldDegree)!!
             buckets.remove(oldDegree)
             oldBucket.degree = newDegree
             buckets.put(newDegree, oldBucket)
+            BUCKET_OPTIMIZED++
         } else {
-            node.remove()
-            add(node)
+            val old = node.list!!
+            val new = getListForDegree(newDegree)
+            if (old != new) {
+                node.remove()
+                add(node)
+            }
         }
     }
 }
