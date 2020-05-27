@@ -8,12 +8,19 @@ private const val DEGREE_THRESHOLD = 100
 var FULL_SCAN_WAS_NECESSARY = 0
 
 class VerticesByDegreeQueue(maxDegree: Int) {
-    private class DegreeBucket(var degree: Int) : Comparable<DegreeBucket> {
-
+    private inner class DegreeBucket(val degree: Int) : Comparable<DegreeBucket> {
+        var inPQ = false
         val vertices = VerticesLinkedList()
 
         override fun compareTo(other: DegreeBucket): Int {
             return degree.compareTo(other.degree)
+        }
+
+        fun ensureInPQ() {
+            if (!inPQ) {
+                inPQ = true
+                queue.add(this)
+            }
         }
     }
 
@@ -30,6 +37,7 @@ class VerticesByDegreeQueue(maxDegree: Int) {
     private fun getListForDegree(degree: Int): VerticesLinkedList {
         return if (degree < DEGREE_THRESHOLD) {
             val bucket = getOrCreateBucket(degree)
+            bucket.ensureInPQ()
             bucket.vertices
         } else {
             otherNodes
@@ -38,9 +46,7 @@ class VerticesByDegreeQueue(maxDegree: Int) {
 
     private fun getOrCreateBucket(degree: Int): DegreeBucket {
         return buckets.getOrPut(degree) {
-            DegreeBucket(degree).also { db ->
-                queue.add(db)
-            }
+            DegreeBucket(degree)
         }
     }
 
@@ -72,8 +78,7 @@ class VerticesByDegreeQueue(maxDegree: Int) {
         while (true) {
             val firstBucket = queue.peek()
             if (firstBucket != null && firstBucket.vertices.isEmpty()) {
-                buckets.remove(firstBucket.degree)
-                queue.remove()
+                queue.remove().also { it.inPQ = false }
             } else {
                 return firstBucket
             }
