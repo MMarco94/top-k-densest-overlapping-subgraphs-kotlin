@@ -20,6 +20,8 @@ class VerticesByDegreeQueue(maxDegree: Int) {
 
     private val queue = PriorityQueue<DegreeBucket>()
     private val buckets = SparseArray<DegreeBucket>(min(maxDegree, DEGREE_THRESHOLD))
+
+    //Contains nodes with degree >= DEGREE_THRESHOLD
     private val otherNodes = VerticesLinkedList()
 
     fun add(node: VerticesLinkedList.Node) {
@@ -93,8 +95,7 @@ class VerticesByDegreeQueue(maxDegree: Int) {
             val old = node.list!!
             val new = getListForDegree(newDegree)
             if (old != new) {
-                node.remove()
-                node.add(this, new)
+                node.move(new)
             }
         }
     }
