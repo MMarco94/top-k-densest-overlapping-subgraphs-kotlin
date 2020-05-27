@@ -3,7 +3,7 @@ package datastructure
 import java.util.*
 
 class VerticesByDegreeQueue(maxDegree: Int) {
-    private class DegreeBucket(val degree: Int) : Comparable<DegreeBucket> {
+    private class DegreeBucket(var degree: Int) : Comparable<DegreeBucket> {
 
         val vertices = VerticesLinkedList()
 
@@ -17,12 +17,16 @@ class VerticesByDegreeQueue(maxDegree: Int) {
 
     fun add(node: VerticesLinkedList.Node) {
         val degree = node.degree
-        val bucket = buckets.getOrPut(degree) {
+        val bucket = getOrCreateBucket(degree)
+        node.add(this, bucket.vertices)
+    }
+
+    private fun getOrCreateBucket(degree: Int): DegreeBucket {
+        return buckets.getOrPut(degree) {
             DegreeBucket(degree).also { db ->
                 queue.add(db)
             }
         }
-        node.add(this, bucket.vertices)
     }
 
     fun isEmpty(): Boolean {
@@ -53,8 +57,18 @@ class VerticesByDegreeQueue(maxDegree: Int) {
         }
     }
 
-    fun changeDegree(node: VerticesLinkedList.Node) {
-        node.remove()
-        add(node)
+    fun changeDegree(node: VerticesLinkedList.Node, oldDegree: Int, newDegree: Int) {
+        if (newDegree == oldDegree - 1 && node.next == null && node.prev == null && !buckets.contains(newDegree)) {
+            //Optimizing the case in which the degree decreases by 1: most of the times
+            //I can change the bucket instead of removing/adding the node.
+            //In this case, the priority queue doesn't need to be updated, since the position in the heap will remain the same
+            val oldBucket = buckets.get(oldDegree)!!
+            buckets.remove(oldDegree)
+            oldBucket.degree = newDegree
+            buckets.put(newDegree, oldBucket)
+        } else {
+            node.remove()
+            add(node)
+        }
     }
 }

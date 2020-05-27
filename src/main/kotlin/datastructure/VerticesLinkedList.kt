@@ -62,10 +62,11 @@ class VerticesLinkedList {
         }
 
         fun changeDegree(newDegree: Int) {
-            if (newDegree != degree) {
+            val oldDegree = degree
+            if (newDegree != oldDegree) {
                 check(newDegree >= 0)
                 degree = newDegree
-                queue?.changeDegree(this)
+                queue?.changeDegree(this, oldDegree, newDegree)
             }
         }
     }

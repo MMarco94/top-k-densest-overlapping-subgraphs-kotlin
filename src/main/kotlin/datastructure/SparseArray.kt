@@ -7,18 +7,22 @@ package datastructure
 class SparseArray<T : Any>(limit: Int) {
 
     @Suppress("UNCHECKED_CAST")
-    private val smallValues = arrayOfNulls<Any>(limit + 1) as Array<T?>
+    private val values = arrayOfNulls<Any>(limit + 1) as Array<T?>
 
     fun get(key: Int): T? {
-        return smallValues[key]
+        return values[key]
     }
 
     fun put(key: Int, value: T) {
-        smallValues[key] = value
+        values[key] = value
     }
 
     fun remove(key: Int) {
-        smallValues[key] = null
+        values[key] = null
+    }
+
+    fun contains(key: Int): Boolean {
+        return values[key] != null
     }
 
     inline fun getOrPut(key: Int, defaultValue: () -> T): T {
