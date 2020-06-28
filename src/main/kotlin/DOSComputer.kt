@@ -29,7 +29,9 @@ class DOSComputer(val graph: Graph, val lambda: Double, val distance: Distance =
      * Do a peeling step. See page 14, algorithm 2
      */
     fun peel(): SubGraph {
-        return Peeler().peel()
+        return Peeler().peel().also {
+            subGraphs.add(it)
+        }
     }
 
     /**
@@ -87,7 +89,6 @@ class DOSComputer(val graph: Graph, val lambda: Double, val distance: Distance =
             partitions.removeAll { it.vertices.isEmpty() }
             nodes.forEach { it.resetDegree(graph) }
 
-            subGraphs.add(bestSubGraph)
             return bestSubGraph
         }
 

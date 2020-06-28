@@ -86,9 +86,9 @@ class VerticesByDegreeQueue(maxDegree: Int) {
     }
 
     fun changeDegree(node: VerticesLinkedList.Node, newDegree: Int) {
-        val new = getListForDegree(newDegree)
-        if (node.list != new) {
-            node.move(new)
+        val newList = getListForDegree(newDegree)
+        if (node.list != newList) {
+            node.move(newList)
         }
     }
 }
